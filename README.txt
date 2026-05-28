@@ -4,7 +4,7 @@ Tags:               inventory, management, borrow, tracking, departments
 Requires at least:  6.0
 Tested up to:       6.7
 Requires PHP:       8.0
-Stable tag:         1.1.0
+Stable tag:         1.2.0
 License:            GPLv2 or later
 License URI:        https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,12 @@ entries remain untouched. Data is only removed when you **delete** the plugin
 and confirm the uninstall action.
 
 == Changelog ==
+
+= 1.2.0 — 2026-05-28 =
+* Add CSV export to Borrow Log (respects active filters, UTF-8 BOM for Excel).
+* Add "Delete Data on Uninstall" checkbox in Settings → Advanced; uninstall
+  is now safe by default (data preserved unless checkbox is enabled).
+* See CHANGELOG.txt for full details.
 
 = 1.1.0 — 2026-05-28 =
 * Fix duplicate XEN Inventory entry in the WordPress admin sidebar.

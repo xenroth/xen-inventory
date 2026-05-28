@@ -37,6 +37,9 @@ class AjaxHandlers {
 
         // Fetch item availability (logged-in users only — inventory display requires xen_view_inventory).
         add_action( 'wp_ajax_xen_get_items', [ $this, 'get_items' ] );
+
+        // Export borrow log as CSV (admin only, standard form POST via admin-post.php).
+        add_action( 'admin_post_xen_export_log', [ $this, 'export_log_csv' ] );
     }
 
     // -----------------------------------------------------------------------
@@ -156,6 +159,136 @@ class AjaxHandlers {
         } else {
             wp_send_json_error( [ 'message' => __( 'Could not update the log entry.', 'xen-inventory' ) ], 500 );
         }
+    }
+
+    /**
+     * Export the borrow log as a UTF-8 CSV file.
+     *
+     * Triggered by a standard form POST to admin-post.php with action=xen_export_log.
+     * Respects the same search/status/date filters as the borrow log screen.
+     *
+     * @return void  Outputs CSV file and exits.
+     */
+    public function export_log_csv(): void {
+        check_admin_referer( 'xen_export_log' );
+
+        if ( ! current_user_can( 'xen_manage_inventory' ) ) {
+            wp_die( esc_html__( 'Permission denied.', 'xen-inventory' ), 403 );
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . XEN_INVENTORY_LOG_TABLE;
+
+        // Rebuild filters (same validation as borrow-log.php view).
+        $filter_search    = sanitize_text_field( wp_unslash( $_POST['xen_search']    ?? '' ) );
+        $filter_status    = sanitize_key(         wp_unslash( $_POST['xen_status']    ?? '' ) );
+        $filter_date_from = sanitize_text_field( wp_unslash( $_POST['xen_date_from'] ?? '' ) );
+        $filter_date_to   = sanitize_text_field( wp_unslash( $_POST['xen_date_to']   ?? '' ) );
+
+        if ( $filter_date_from && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $filter_date_from ) ) {
+            $filter_date_from = '';
+        }
+        if ( $filter_date_to && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $filter_date_to ) ) {
+            $filter_date_to = '';
+        }
+
+        $where      = [];
+        $where_args = [];
+
+        if ( $filter_search ) {
+            $like         = '%' . $wpdb->esc_like( $filter_search ) . '%';
+            $where[]      = '( l.borrower_name LIKE %s OR p.post_title LIKE %s )';
+            $where_args[] = $like;
+            $where_args[] = $like;
+        }
+
+        $allowed_statuses = [ 'open', 'returned' ];
+        if ( $filter_status && in_array( $filter_status, $allowed_statuses, true ) ) {
+            if ( 'open' === $filter_status ) {
+                $where[] = "( l.action = 'borrowed' AND l.date_returned IS NULL )";
+            } else {
+                $where[] = 'l.date_returned IS NOT NULL';
+            }
+        }
+
+        if ( $filter_date_from ) {
+            $where[]      = 'l.date_borrowed >= %s';
+            $where_args[] = $filter_date_from . ' 00:00:00';
+        }
+        if ( $filter_date_to ) {
+            $where[]      = 'l.date_borrowed <= %s';
+            $where_args[] = $filter_date_to . ' 23:59:59';
+        }
+
+        $where_sql  = $where ? ( 'WHERE ' . implode( ' AND ', $where ) ) : '';
+        $base_query = "FROM {$table} l LEFT JOIN {$wpdb->posts} p ON p.ID = l.item_id {$where_sql}";
+
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+        $logs = $where_args
+            ? $wpdb->get_results( $wpdb->prepare(
+                "SELECT l.*, p.post_title AS item_title {$base_query} ORDER BY l.date_borrowed DESC",
+                $where_args
+            ) )
+            : $wpdb->get_results(
+                "SELECT l.*, p.post_title AS item_title {$base_query} ORDER BY l.date_borrowed DESC"
+            );
+        // phpcs:enable
+
+        $date_fmt = get_option( 'date_format' );
+        $filename = 'xen-borrow-log-' . gmdate( 'Y-m-d' ) . '.csv';
+
+        nocache_headers();
+        header( 'Content-Type: text/csv; charset=utf-8' );
+        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+        header( 'Pragma: no-cache' );
+        header( 'Expires: 0' );
+
+        $out = fopen( 'php://output', 'w' );
+
+        // UTF-8 BOM so Excel opens the file with correct encoding.
+        fwrite( $out, "\xEF\xBB\xBF" );
+
+        fputcsv( $out, [
+            __( 'ID',         'xen-inventory' ),
+            __( 'Item',       'xen-inventory' ),
+            __( 'Borrower',   'xen-inventory' ),
+            __( 'Action',     'xen-inventory' ),
+            __( 'Quantity',   'xen-inventory' ),
+            __( 'Borrowed',   'xen-inventory' ),
+            __( 'Due Date',   'xen-inventory' ),
+            __( 'Returned',   'xen-inventory' ),
+            __( 'Status',     'xen-inventory' ),
+            __( 'Notes',      'xen-inventory' ),
+        ] );
+
+        foreach ( $logs as $log ) {
+            $due      = $log->date_due      ? wp_date( $date_fmt, strtotime( $log->date_due      ) ) : '';
+            $returned = $log->date_returned ? wp_date( $date_fmt, strtotime( $log->date_returned ) ) : '';
+
+            if ( $log->date_returned ) {
+                $status = __( 'Returned', 'xen-inventory' );
+            } elseif ( $log->date_due && strtotime( $log->date_due ) < time() ) {
+                $status = __( 'Overdue', 'xen-inventory' );
+            } else {
+                $status = __( 'Open', 'xen-inventory' );
+            }
+
+            fputcsv( $out, [
+                (int) $log->id,
+                $log->item_title    ?? '',
+                $log->borrower_name ?? '',
+                ucfirst( $log->action ),
+                (int) $log->quantity,
+                wp_date( $date_fmt, strtotime( $log->date_borrowed ) ),
+                $due,
+                $returned,
+                $status,
+                $log->notes ?? '',
+            ] );
+        }
+
+        fclose( $out );
+        exit;
     }
 
     /**

@@ -118,6 +118,19 @@ $pages = (int) ceil( $total / $per_page );
         <?php endif; ?>
     </form>
 
+    <!-- Export form — submits current filters, streams a CSV file. -->
+    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="xen-export-form">
+        <input type="hidden" name="action"        value="xen_export_log" />
+        <input type="hidden" name="xen_search"    value="<?php echo esc_attr( $filter_search ); ?>" />
+        <input type="hidden" name="xen_status"    value="<?php echo esc_attr( $filter_status ); ?>" />
+        <input type="hidden" name="xen_date_from" value="<?php echo esc_attr( $filter_date_from ); ?>" />
+        <input type="hidden" name="xen_date_to"   value="<?php echo esc_attr( $filter_date_to ); ?>" />
+        <?php wp_nonce_field( 'xen_export_log' ); ?>
+        <button type="submit" class="button xen-btn-export">
+            &#8595;&nbsp;<?php esc_html_e( 'Export CSV', 'xen-inventory' ); ?>
+        </button>
+    </form>
+
     <p class="xen-log-count">
         <?php
         /* translators: %d: number of matching log entries */

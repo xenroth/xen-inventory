@@ -108,6 +108,15 @@
     margin: 0 0 0.75rem;
 }
 
+.xen-export-form {
+    display: inline-block;
+    margin: 0 0 1rem;
+}
+
+.xen-btn-export {
+    vertical-align: middle;
+}
+
 /* --------------------------------------------------------------------------
    Recent Activity
    -------------------------------------------------------------------------- */

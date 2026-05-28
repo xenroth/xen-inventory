@@ -5,6 +5,27 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.2.0 — 2026-05-28 =
+------------------------------------------------------------------------------
+
+== New Features ==
+
+* Borrow Log CSV Export — an "Export CSV" button appears on the Borrow Log
+  admin page. The export respects all active filters (search, status, date
+  range) so you can export exactly what you see on screen. The downloaded file
+  includes a UTF-8 BOM for correct Excel/Sheets encoding and contains columns:
+  ID, Item, Borrower, Action, Quantity, Borrowed, Due Date, Returned, Status,
+  Notes. Secured with a nonce and requires the xen_manage_inventory capability.
+
+* Delete Data on Uninstall setting — a new "Advanced" section in
+  XEN Inventory → Settings exposes a "Delete Data on Uninstall" checkbox.
+  - Checkbox OFF (default): deleting the plugin only removes plugin options;
+    all inventory items, borrow logs, and departments are preserved.
+  - Checkbox ON: deleting the plugin permanently removes the borrow log table,
+    all xen_item posts and their meta, all xen_department terms, the xen_staff
+    role, and all plugin options. A prominent red warning is shown in Settings.
+
+------------------------------------------------------------------------------
 = 1.1.0 — 2026-05-28 =
 ------------------------------------------------------------------------------
 

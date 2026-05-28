@@ -93,6 +93,30 @@ class Settings {
     // -----------------------------------------------------------------------
 
     /**
+     * Render the "Delete Data on Uninstall" checkbox field.
+     *
+     * @return void
+     */
+    public function field_delete_on_uninstall(): void {
+        $options = get_option( self::OPTION_KEY, [] );
+        $checked = ! empty( $options['delete_data_on_uninstall'] );
+        ?>
+        <label>
+            <input
+                type="checkbox"
+                name="<?php echo esc_attr( self::OPTION_KEY ); ?>[delete_data_on_uninstall]"
+                value="1"
+                <?php checked( $checked ); ?>
+            />
+            <?php esc_html_e( 'When this plugin is deleted, permanently remove all inventory items, borrow logs, departments, settings, and the custom database table.', 'xen-inventory' ); ?>
+        </label>
+        <p class="description" style="color:#b91c1c;font-weight:600;">
+            <?php esc_html_e( 'Warning: this action is irreversible. Leave unchecked to keep your data when removing the plugin.', 'xen-inventory' ); ?>
+        </p>
+        <?php
+    }
+
+    /**
      * Render a page-selector dropdown field.
      *
      * @param  array<string, mixed> $args Field arguments.
@@ -169,9 +193,10 @@ class Settings {
 
         $clean = [];
 
-        $clean['login_page_id']       = absint( $input['login_page_id'] ?? 0 );
-        $clean['items_per_page']       = min( 100, max( 1, absint( $input['items_per_page'] ?? 20 ) ) );
-        $clean['allow_guest_calendar'] = ! empty( $input['allow_guest_calendar'] ) ? 1 : 0;
+        $clean['login_page_id']          = absint( $input['login_page_id'] ?? 0 );
+        $clean['items_per_page']          = min( 100, max( 1, absint( $input['items_per_page'] ?? 20 ) ) );
+        $clean['allow_guest_calendar']    = ! empty( $input['allow_guest_calendar'] ) ? 1 : 0;
+        $clean['delete_data_on_uninstall'] = ! empty( $input['delete_data_on_uninstall'] ) ? 1 : 0;
 
         return $clean;
     }
