@@ -196,4 +196,154 @@
             } );
     } );
 
+    // -----------------------------------------------------------------------
+    // Borrow Log Edit Modal (item history + my borrow history)
+    // Shared handlers for #xen-log-edit-modal present on page-item.php
+    // and inventory-display.php.
+    // -----------------------------------------------------------------------
+
+    var $logEditModal  = null;
+    var $logEditId     = null;
+    var $logEditDue    = null;
+    var $logEditRet    = null;
+    var $logEditNotes  = null;
+    var $logEditStatus = null;
+    var $logEditBorr   = null;
+
+    function initLogEditModal() {
+        $logEditModal  = $( '#xen-log-edit-modal' );
+        if ( ! $logEditModal.length ) return false;
+        $logEditId     = $( '#xen-log-edit-id' );
+        $logEditDue    = $( '#xen-log-edit-due' );
+        $logEditRet    = $( '#xen-log-edit-returned' );
+        $logEditNotes  = $( '#xen-log-edit-notes' );
+        $logEditStatus = $( '#xen-log-edit-status' );
+        $logEditBorr   = $( '#xen-log-edit-borrower' );
+        return true;
+    }
+
+    function openLogEditModal( data ) {
+        if ( ! $logEditModal || ! $logEditModal.length ) {
+            if ( ! initLogEditModal() ) return;
+        }
+        $logEditId.val( data.logId || '' );
+        $logEditDue.val( data.dateDue    ? data.dateDue.replace( ' ', 'T' ).substring( 0, 16 ) : '' );
+        $logEditRet.val( data.dateRet    ? data.dateRet.substring( 0, 10 )                      : '' );
+        $logEditNotes.val( data.notes || '' );
+        $logEditBorr.text( data.borrower || data.itemTitle || '' );
+        $logEditStatus.text( '' ).removeClass( 'xen-log-edit-modal__status--ok xen-log-edit-modal__status--error' );
+        $logEditModal.removeAttr( 'hidden' );
+        $logEditDue.trigger( 'focus' );
+    }
+
+    function closeLogEditModal() {
+        if ( $logEditModal ) $logEditModal.attr( 'hidden', '' );
+    }
+
+    $( document )
+        .on( 'click', '#xen-log-edit-close, #xen-log-edit-cancel', closeLogEditModal )
+        .on( 'click', '.xen-log-edit-modal__overlay', closeLogEditModal )
+        .on( 'keydown', function ( e ) {
+            if ( 'Escape' === e.key ) closeLogEditModal();
+        } );
+
+    // Edit button on item history table.
+    $( document ).on( 'click', '.xen-item-log-edit-btn', function () {
+        var $row = $( this ).closest( 'tr' );
+        openLogEditModal( {
+            logId:      $row.data( 'log-id' ),
+            dateDue:    $row.data( 'date-due' ),
+            dateRet:    $row.data( 'date-returned' ),
+            notes:      $row.data( 'notes' ),
+            borrower:   $row.data( 'borrower' ),
+            itemTitle:  '',
+        } );
+    } );
+
+    // Return button on item history table.
+    $( document ).on( 'click', '.xen-item-log-return-btn', function () {
+        var $btn   = $( this );
+        var logId  = $btn.data( 'log-id' );
+        var qty    = parseInt( $btn.data( 'qty' ) || 1, 10 );
+        var answer = qty > 1
+            ? window.prompt( 'How many are being returned? (1 – ' + qty + ')', qty )
+            : ( window.confirm( 'Mark this item as returned?' ) ? qty : null );
+        if ( null === answer ) return;
+        var qtyRet = parseInt( answer, 10 );
+        if ( isNaN( qtyRet ) || qtyRet < 1 || qtyRet > qty ) {
+            alert( 'Please enter a number between 1 and ' + qty + '.' );
+            return;
+        }
+        $btn.prop( 'disabled', true ).text( '…' );
+        $.post( xenInventory.ajaxUrl, {
+            action:       'xen_return_item',
+            nonce:        xenInventory.returnNonce,
+            log_id:       logId,
+            qty_returned: qtyRet,
+            notes:        '',
+        } ).done( function ( resp ) {
+            if ( resp.success ) {
+                // Reload to reflect updated status.
+                location.reload();
+            } else {
+                alert( ( resp.data && resp.data.message ) || 'Error.' );
+                $btn.prop( 'disabled', false ).text( 'Return' );
+            }
+        } ).fail( function () {
+            alert( xenInventory.i18n.errorGeneric );
+            $btn.prop( 'disabled', false ).text( 'Return' );
+        } );
+    } );
+
+    // Double-click on My Borrow History row → open detail/edit modal.
+    var _dblClickTimer = null;
+    $( document ).on( 'dblclick', '.xen-my-history-row', function ( e ) {
+        e.preventDefault();
+        var $row = $( this );
+        openLogEditModal( {
+            logId:     $row.data( 'log-id' ),
+            dateDue:   $row.data( 'date-due' ),
+            dateRet:   $row.data( 'date-returned' ),
+            notes:     $row.data( 'notes' ),
+            borrower:  '',
+            itemTitle: $row.data( 'item-title' ),
+        } );
+    } );
+
+    // Save handler for the log edit form.
+    $( document ).on( 'submit', '#xen-log-edit-form', function ( e ) {
+        e.preventDefault();
+        if ( ! initLogEditModal() ) return;
+
+        var $saveBtn = $( '#xen-log-edit-save' );
+        $saveBtn.prop( 'disabled', true );
+        $logEditStatus.text( '' ).removeClass( 'xen-log-edit-modal__status--ok xen-log-edit-modal__status--error' );
+
+        $.post( xenInventory.ajaxUrl, {
+            action:        'xen_update_borrow',
+            nonce:         xenInventory.updateNonce,
+            log_id:        $logEditId.val(),
+            date_due:      $logEditDue.val(),
+            date_returned: $logEditRet.val(),
+            notes:         $logEditNotes.val(),
+        } ).done( function ( resp ) {
+            if ( resp.success ) {
+                $logEditStatus.text( ( resp.data && resp.data.message ) || 'Saved.' )
+                    .addClass( 'xen-log-edit-modal__status--ok' );
+                setTimeout( function () {
+                    closeLogEditModal();
+                    location.reload();
+                }, 900 );
+            } else {
+                $logEditStatus.text( ( resp.data && resp.data.message ) || 'Could not save.' )
+                    .addClass( 'xen-log-edit-modal__status--error' );
+            }
+        } ).fail( function () {
+            $logEditStatus.text( xenInventory.i18n.errorGeneric )
+                .addClass( 'xen-log-edit-modal__status--error' );
+        } ).always( function () {
+            $saveBtn.prop( 'disabled', false );
+        } );
+    } );
+
 } )( jQuery );

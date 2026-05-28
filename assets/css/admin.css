@@ -124,9 +124,47 @@
     margin-top: 2rem;
 }
 
-.xen-recent-activity h2 {
+.xen-recent-activity__header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.xen-recent-activity__header h2 {
     font-size: 1rem;
-    margin: 0 0 0.75rem;
+    margin: 0;
+}
+.xen-recent-activity__count {
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+/* Filter bar */
+.xen-ra-filters {
+    display: flex !important;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.875rem;
+}
+.xen-ra-search {
+    flex: 1 1 180px;
+    max-width: 260px;
+    min-width: 140px;
+    padding: 0.4rem 0.625rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    width: auto !important;
+}
+.xen-ra-select {
+    font-size: 0.8125rem;
+    min-width: 130px;
+    width: auto !important;
+    flex-shrink: 0;
+}
+.xen-ra-pagination {
+    margin-top: 0.75rem;
 }
 
 /* --------------------------------------------------------------------------
@@ -187,28 +225,6 @@
     padding: 0.1rem 0.625rem;
     letter-spacing: 0.02em;
     line-height: 1.5;
-}
-
-/* Search / filter toolbar (layout rules live in the responsive block below) */
-
-.xen-borrowers-search {
-    flex: 1 1 180px;
-    max-width: 360px;
-    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    color: #1e293b;
-    background-color: #fff;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: 0.625rem center;
-    transition: border-color 150ms ease, box-shadow 150ms ease;
-    outline: none;
-}
-.xen-borrowers-search:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 /* Table wrapper (horizontal scroll on narrow screens) */
@@ -797,23 +813,46 @@ details.xen-guide-details[open] > summary.xen-info-card__title::after {
    ========================================================================== */
 
 .xen-borrowers-toolbar {
-    display: flex;
+    display: flex !important;
     align-items: center;
     flex-wrap: wrap;
     gap: 0.625rem;
     margin-bottom: 1rem;
 }
 
-.xen-borrowers-filters {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    align-items: center;
+/* Prevent WP admin global width rules from expanding children to full width */
+.xen-borrowers-toolbar > * {
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.xen-borrowers-search {
+    flex: 1 1 160px !important;
+    max-width: 280px !important;
+    min-width: 140px;
+    width: auto !important;
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    color: #1e293b;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 0.625rem center;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+    outline: none;
+}
+.xen-borrowers-search:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .xen-borrowers-filter-select {
     font-size: 0.8125rem;
     min-width: 160px;
+    width: auto !important;
+    flex-shrink: 0;
 }
 
 .xen-borrowers-page-header {

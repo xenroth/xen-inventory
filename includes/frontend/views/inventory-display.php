@@ -361,12 +361,14 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
     if ( is_user_logged_in() ) :
         $my_history = \XenInventory\Models\InventoryLog::get_all_borrows_for_user( get_current_user_id() );
         $df         = get_option( 'date_format' );
+        $tf         = get_option( 'time_format' );
     ?>
     <div class="xen-my-history">
         <h3 class="xen-my-borrows__title"><?php esc_html_e( 'My Borrow History', 'xen-inventory' ); ?></h3>
         <?php if ( empty( $my_history ) ) : ?>
             <p class="xen-notice"><?php esc_html_e( 'You have no borrow history yet.', 'xen-inventory' ); ?></p>
         <?php else : ?>
+        <p class="xen-notice xen-notice--hint"><?php esc_html_e( 'Double-click a row to view its details.', 'xen-inventory' ); ?></p>
         <div class="xen-history-table-wrap">
             <table class="xen-history-table">
                 <thead>
@@ -391,14 +393,25 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                             : ( $is_overdue ? esc_html__( 'Overdue', 'xen-inventory' ) : esc_html__( 'Active', 'xen-inventory' ) );
                         $tags        = array_filter( array_map( 'trim', explode( ',', (string) $row->borrow_tags ) ) );
                     ?>
-                    <tr>
+                    <tr class="xen-my-history-row"
+                        style="cursor: pointer;"
+                        title="<?php esc_attr_e( 'Double-click to view or edit this record', 'xen-inventory' ); ?>"
+                        data-log-id="<?php echo (int) $row->id; ?>"
+                        data-item-title="<?php echo esc_attr( $row->item_title ); ?>"
+                        data-qty="<?php echo (int) $row->quantity; ?>"
+                        data-date-borrowed="<?php echo esc_attr( $row->date_borrowed ?? '' ); ?>"
+                        data-date-due="<?php echo esc_attr( $row->date_due ?? '' ); ?>"
+                        data-date-returned="<?php echo esc_attr( $row->date_returned ?? '' ); ?>"
+                        data-notes="<?php echo esc_attr( $row->notes ?? '' ); ?>"
+                        data-status="<?php echo esc_attr( $status_cls ); ?>"
+                    >
                         <td>
                             <a href="<?php echo esc_url( get_permalink( $row->item_id ) ); ?>">
                                 <?php echo esc_html( $row->item_title ); ?>
                             </a>
                         </td>
                         <td><?php echo esc_html( wp_date( $df, strtotime( $row->date_borrowed ) ) ); ?></td>
-                        <td><?php echo $due_ts ? esc_html( wp_date( $df, $due_ts ) ) : '—'; ?></td>
+                        <td><?php echo $due_ts ? esc_html( wp_date( $df . ' ' . $tf, $due_ts ) ) : '—'; ?></td>
                         <td><?php echo $is_returned ? esc_html( wp_date( $df, strtotime( $row->date_returned ) ) ) : '—'; ?></td>
                         <td><?php echo (int) $row->quantity; ?></td>
                         <td>
@@ -424,6 +437,41 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
         </div>
         <?php endif; ?>
     </div>
+
+    <?php if ( current_user_can( 'xen_return_items' ) ) : ?>
+    <!-- Borrow Record Detail / Edit Modal for My Borrow History ------------>
+    <div class="xen-log-edit-modal" id="xen-log-edit-modal" role="dialog" aria-modal="true" aria-labelledby="xen-log-edit-title" hidden>
+        <div class="xen-log-edit-modal__overlay"></div>
+        <div class="xen-log-edit-modal__panel">
+            <button class="xen-log-edit-modal__close" id="xen-log-edit-close" type="button" aria-label="<?php esc_attr_e( 'Close', 'xen-inventory' ); ?>">&#x2715;</button>
+            <h2 class="xen-log-edit-modal__title" id="xen-log-edit-title"><?php esc_html_e( 'Borrow Record', 'xen-inventory' ); ?></h2>
+            <div class="xen-log-edit-modal__meta">
+                <span class="xen-log-edit-modal__borrower" id="xen-log-edit-borrower"></span>
+            </div>
+            <form id="xen-log-edit-form" class="xen-form xen-log-edit-form">
+                <input type="hidden" id="xen-log-edit-id" name="log_id" />
+                <div class="xen-form__group">
+                    <label for="xen-log-edit-due"><?php esc_html_e( 'Due Date &amp; Time', 'xen-inventory' ); ?></label>
+                    <input type="datetime-local" id="xen-log-edit-due" name="date_due" />
+                </div>
+                <div class="xen-form__group">
+                    <label for="xen-log-edit-returned"><?php esc_html_e( 'Date Returned', 'xen-inventory' ); ?></label>
+                    <input type="date" id="xen-log-edit-returned" name="date_returned" />
+                </div>
+                <div class="xen-form__group">
+                    <label for="xen-log-edit-notes"><?php esc_html_e( 'Notes', 'xen-inventory' ); ?></label>
+                    <textarea id="xen-log-edit-notes" name="notes" rows="3"></textarea>
+                </div>
+                <div class="xen-form__actions">
+                    <button type="submit" class="xen-btn xen-btn--primary" id="xen-log-edit-save"><?php esc_html_e( 'Save Changes', 'xen-inventory' ); ?></button>
+                    <button type="button" class="xen-btn xen-btn--ghost" id="xen-log-edit-cancel"><?php esc_html_e( 'Cancel', 'xen-inventory' ); ?></button>
+                </div>
+                <p class="xen-log-edit-modal__status" id="xen-log-edit-status" aria-live="polite"></p>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php endif; ?>
 
 </div><!-- .xen-inventory-wrap -->

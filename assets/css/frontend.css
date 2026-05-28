@@ -646,14 +646,15 @@
 
 /* Event popover */
 .xen-event-popover {
-    position: absolute;
-    z-index: 100;
+    position: fixed;
+    z-index: 9999;
     background: var(--xen-color-surface);
     border: 1px solid var(--xen-color-border);
     border-radius: var(--xen-radius);
     padding: 1rem;
     box-shadow: var(--xen-shadow-lg);
     min-width: 200px;
+    max-width: 320px;
     font-size: 0.875rem;
 }
 
@@ -1370,15 +1371,13 @@
         object-fit: cover;
     }
 
-    /* Calendar event popover — anchor to bottom of screen */
+    /* Calendar event popover — already position:fixed globally; on mobile just stretch to edges */
     .xen-event-popover {
-        position: fixed;
         bottom: 1rem;
         left: 1rem;
         right: 1rem;
-        top: auto;
+        top: auto !important;
         max-width: none;
-        z-index: 9999;
     }
 
     /* Day modal — full-width bottom sheet */
@@ -1604,4 +1603,128 @@
     display: flex;
     gap: 0.5rem;
     margin-top: 1rem;
+}
+
+/* =========================================================
+   Borrow Log Edit Modal  (item history + my borrow history)
+   ========================================================= */
+
+.xen-log-edit-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.xen-log-edit-modal[hidden] {
+    display: none;
+}
+
+.xen-log-edit-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+}
+
+.xen-log-edit-modal__panel {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .25);
+    padding: 1.75rem 2rem 1.5rem;
+    width: min(480px, 94vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 1;
+}
+
+.xen-log-edit-modal__close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.875rem;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #666;
+    padding: 0.25rem;
+}
+
+.xen-log-edit-modal__close:hover {
+    color: #111;
+}
+
+.xen-log-edit-modal__title {
+    margin: 0 0 0.25rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--xen-color-dark, #1a1a2e);
+}
+
+.xen-log-edit-modal__meta {
+    font-size: .875rem;
+    color: #555;
+    margin-bottom: 1rem;
+}
+
+.xen-log-edit-modal__status {
+    min-height: 1.25em;
+    font-size: .875rem;
+    margin-top: 0.5rem;
+}
+
+.xen-log-edit-modal__status--ok {
+    color: #1a7a1a;
+}
+
+.xen-log-edit-modal__status--error {
+    color: #c0392b;
+}
+
+/* Action buttons in item borrow history table */
+.xen-item-log-actions {
+    white-space: nowrap;
+}
+
+.xen-item-log-actions button {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border: 1px solid currentColor;
+    cursor: pointer;
+    background: transparent;
+    margin: 0 0.15rem 0 0;
+    line-height: 1.5;
+    transition: background .15s, color .15s;
+}
+
+.xen-item-log-edit-btn {
+    color: var(--xen-color-primary, #4361ee);
+    border-color: var(--xen-color-primary, #4361ee);
+}
+
+.xen-item-log-edit-btn:hover {
+    background: var(--xen-color-primary, #4361ee);
+    color: #fff;
+}
+
+.xen-item-log-return-btn {
+    color: var(--xen-color-success, #2d6a4f);
+    border-color: var(--xen-color-success, #2d6a4f);
+}
+
+.xen-item-log-return-btn:hover {
+    background: var(--xen-color-success, #2d6a4f);
+    color: #fff;
+}
+
+/* Hint notice variant */
+.xen-notice--hint {
+    font-size: .8rem;
+    color: #777;
+    margin-bottom: 0.5rem;
 }

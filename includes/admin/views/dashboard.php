@@ -22,14 +22,73 @@ $overdue      = (int) $wpdb->get_var( $wpdb->prepare(
     current_time( 'mysql', true )
 ) );
 
-// Recent activity (last 10 entries).
-$recent = $wpdb->get_results(
-    "SELECT l.*, p.post_title AS item_title
-     FROM {$table} l
-     LEFT JOIN {$wpdb->posts} p ON p.ID = l.item_id
-     ORDER BY l.date_borrowed DESC
-     LIMIT 10"
-);
+// Recent activity — paginated + filterable.
+$ra_per_page    = 20;
+$ra_page        = max( 1, absint( $_GET['paged'] ?? 1 ) );
+$ra_offset      = ( $ra_page - 1 ) * $ra_per_page;
+$ra_search      = sanitize_text_field( wp_unslash( $_GET['xen_ra_search']  ?? '' ) );
+$ra_action      = sanitize_key( wp_unslash( $_GET['xen_ra_action']  ?? '' ) );
+$ra_status      = sanitize_key( wp_unslash( $_GET['xen_ra_status']  ?? '' ) );
+
+$ra_where      = [];
+$ra_args       = [];
+
+if ( $ra_search ) {
+    $like         = '%' . $wpdb->esc_like( $ra_search ) . '%';
+    $ra_where[]   = '( p.post_title LIKE %s OR l.borrower_full_name LIKE %s OR l.borrower_name LIKE %s )';
+    $ra_args[]    = $like;
+    $ra_args[]    = $like;
+    $ra_args[]    = $like;
+}
+if ( $ra_action ) {
+    $ra_where[] = 'l.action = %s';
+    $ra_args[]  = $ra_action;
+}
+// Status filter maps to DB conditions.
+if ( 'open' === $ra_status ) {
+    $ra_where[] = 'l.date_returned IS NULL';
+} elseif ( 'returned' === $ra_status ) {
+    $ra_where[] = 'l.date_returned IS NOT NULL';
+} elseif ( 'overdue' === $ra_status ) {
+    $ra_where[] = "l.date_returned IS NULL AND l.date_due IS NOT NULL AND l.date_due < '" . current_time( 'mysql', true ) . "'";
+}
+
+$ra_where_sql = $ra_where ? 'WHERE ' . implode( ' AND ', $ra_where ) : '';
+
+if ( $ra_args ) {
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+    $recent = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT l.*, p.post_title AS item_title
+             FROM {$table} l
+             LEFT JOIN {$wpdb->posts} p ON p.ID = l.item_id
+             {$ra_where_sql}
+             ORDER BY l.date_borrowed DESC
+             LIMIT %d OFFSET %d",
+            array_merge( $ra_args, [ $ra_per_page, $ra_offset ] )
+        )
+    );
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+    $ra_total = (int) $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table} l LEFT JOIN {$wpdb->posts} p ON p.ID = l.item_id {$ra_where_sql}",
+            $ra_args
+        )
+    );
+} else {
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+    $recent = $wpdb->get_results(
+        "SELECT l.*, p.post_title AS item_title
+         FROM {$table} l
+         LEFT JOIN {$wpdb->posts} p ON p.ID = l.item_id
+         {$ra_where_sql}
+         ORDER BY l.date_borrowed DESC
+         LIMIT {$ra_per_page} OFFSET {$ra_offset}"
+    );
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+    $ra_total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} l LEFT JOIN {$wpdb->posts} p ON p.ID = l.item_id {$ra_where_sql}" );
+}
+$ra_pages = (int) ceil( $ra_total / $ra_per_page );
 // phpcs:enable
 
 // Version check data.
@@ -175,9 +234,50 @@ $check_update_url = wp_nonce_url(
         <?php endif; ?>
     </div>
 
-    <?php if ( ! empty( $recent ) ) : ?>
+    <?php if ( ! empty( $recent ) || $ra_search || $ra_action || $ra_status ) : ?>
         <div class="xen-recent-activity">
-            <h2><?php esc_html_e( 'Recent Activity', 'xen-inventory' ); ?></h2>
+            <div class="xen-recent-activity__header">
+                <h2><?php esc_html_e( 'Recent Activity', 'xen-inventory' ); ?></h2>
+                <span class="xen-recent-activity__count">
+                    <?php
+                    /* translators: %d: total matching records */
+                    printf( esc_html__( '%d records', 'xen-inventory' ), $ra_total );
+                    ?>
+                </span>
+            </div>
+
+            <!-- Filter bar -->
+            <form method="get" class="xen-ra-filters" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
+                <input type="hidden" name="page" value="xen-inventory" />
+                <input
+                    type="search"
+                    name="xen_ra_search"
+                    class="xen-ra-search"
+                    value="<?php echo esc_attr( $ra_search ); ?>"
+                    placeholder="<?php esc_attr_e( 'Search item or borrower…', 'xen-inventory' ); ?>"
+                />
+                <select name="xen_ra_action" class="xen-ra-select">
+                    <option value=""><?php esc_html_e( 'All Actions',   'xen-inventory' ); ?></option>
+                    <option value="borrowed"  <?php selected( $ra_action, 'borrowed'  ); ?>><?php esc_html_e( 'Borrowed',  'xen-inventory' ); ?></option>
+                    <option value="returned"  <?php selected( $ra_action, 'returned'  ); ?>><?php esc_html_e( 'Returned',  'xen-inventory' ); ?></option>
+                </select>
+                <select name="xen_ra_status" class="xen-ra-select">
+                    <option value=""><?php esc_html_e( 'All Statuses',  'xen-inventory' ); ?></option>
+                    <option value="open"      <?php selected( $ra_status, 'open'      ); ?>><?php esc_html_e( 'Open',      'xen-inventory' ); ?></option>
+                    <option value="returned"  <?php selected( $ra_status, 'returned'  ); ?>><?php esc_html_e( 'Returned',  'xen-inventory' ); ?></option>
+                    <option value="overdue"   <?php selected( $ra_status, 'overdue'   ); ?>><?php esc_html_e( 'Overdue',   'xen-inventory' ); ?></option>
+                </select>
+                <button type="submit" class="button"><?php esc_html_e( 'Filter', 'xen-inventory' ); ?></button>
+                <?php if ( $ra_search || $ra_action || $ra_status ) : ?>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=xen-inventory' ) ); ?>" class="button">
+                        <?php esc_html_e( 'Clear', 'xen-inventory' ); ?>
+                    </a>
+                <?php endif; ?>
+            </form>
+
+            <?php if ( empty( $recent ) ) : ?>
+                <p><?php esc_html_e( 'No activity matches your filters.', 'xen-inventory' ); ?></p>
+            <?php else : ?>
             <table class="wp-list-table widefat fixed striped xen-log-table">
                 <thead>
                     <tr>
@@ -216,6 +316,28 @@ $check_update_url = wp_nonce_url(
                     <?php endforeach; ?>
                 </tbody>
             </table>
+
+            <?php if ( $ra_pages > 1 ) : ?>
+                <div class="tablenav bottom xen-ra-pagination">
+                    <div class="tablenav-pages">
+                        <?php
+                        $page_args = array_filter( [
+                            'page'           => 'xen-inventory',
+                            'xen_ra_search'  => $ra_search,
+                            'xen_ra_action'  => $ra_action,
+                            'xen_ra_status'  => $ra_status,
+                        ] );
+                        echo paginate_links( [
+                            'base'    => add_query_arg( array_merge( $page_args, [ 'paged' => '%#%' ] ), admin_url( 'admin.php' ) ),
+                            'format'  => '',
+                            'current' => $ra_page,
+                            'total'   => $ra_pages,
+                        ] );
+                        ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 

@@ -42,25 +42,55 @@
         }
 
         // ------------------------------------------------------------------
-        // Helper: show/hide event popover (single event click)
+        // Helper: show/hide event popover (single event click or day modal item click)
         // ------------------------------------------------------------------
 
-        function showPopover( info ) {
-            const props = info.event.extendedProps;
+        /**
+         * Populate the popover with event data.
+         * @param {object} props  - { item_title, borrower, action, quantity, notes }
+         */
+        function fillPopover( props ) {
+            popItem.textContent   = props.item_title || '';
+            popAction.textContent = props.borrower
+                ? props.borrower + ( props.action ? ' — ' + props.action : '' )
+                : ( props.action || '' );
+            popQty.textContent    = props.quantity || '';
+            popNotes.textContent  = props.notes    || '—';
+        }
 
-            // Use the dedicated item_title prop; fall back to the full event title.
-            popItem.textContent   = props.item_title || info.event.title;
-            popAction.textContent = props.borrower   ? props.borrower + ' — ' + ( props.action || '' ) : ( props.action || '' );
-            popQty.textContent    = props.quantity   || '';
-            popNotes.textContent  = props.notes      || '—';
-
-            // Position near the mouse click location.
-            var mouseX = ( info.jsEvent.pageX || 0 );
-            var mouseY = ( info.jsEvent.pageY || 0 );
-            popover.style.top  = ( mouseY + 12 ) + 'px';
-            popover.style.left = ( mouseX + 8  ) + 'px';
-
+        /**
+         * Position the popover near a viewport-relative coordinate (clientX/Y)
+         * and ensure it stays within the visible viewport.
+         * @param {number} clientX
+         * @param {number} clientY
+         */
+        function positionPopover( clientX, clientY ) {
+            // Show off-screen first to measure its real dimensions.
+            popover.style.visibility = 'hidden';
             popover.removeAttribute( 'hidden' );
+
+            var popW = popover.offsetWidth  || 240;
+            var popH = popover.offsetHeight || 150;
+            var winW = window.innerWidth;
+            var winH = window.innerHeight;
+
+            var left = clientX + 14;
+            var top  = clientY + 14;
+
+            // Clamp so the popover never escapes the viewport.
+            if ( left + popW > winW - 10 ) { left = clientX - popW - 14; }
+            if ( top  + popH > winH - 10 ) { top  = clientY - popH - 14; }
+            if ( left < 8 ) { left = 8; }
+            if ( top  < 8 ) { top  = 8; }
+
+            popover.style.left       = left + 'px';
+            popover.style.top        = top  + 'px';
+            popover.style.visibility = '';
+        }
+
+        function showPopover( info ) {
+            fillPopover( info.event.extendedProps );
+            positionPopover( info.jsEvent.clientX, info.jsEvent.clientY );
         }
 
         function hidePopover() {
@@ -110,7 +140,15 @@
                         ? ev.start.toLocaleDateString( locale, { month: 'short', day: 'numeric' } )
                         : '';
 
-                    html += '<li class="xen-day-modal__item xen-day-modal__item--' + statusCls + '" data-log-id="' + escHtml( logId ) + '">';
+                html += '<li class="xen-day-modal__item xen-day-modal__item--' + statusCls + '"'
+                    + ' data-log-id="'      + escHtml( logId ) + '"'
+                    + ' data-item-title="'  + escHtml( props.item_title || ev.title ) + '"'
+                    + ' data-borrower="'    + escHtml( props.borrower || '' ) + '"'
+                    + ' data-action="'      + escHtml( props.action || '' ) + '"'
+                    + ' data-qty="'         + escHtml( props.quantity || 1 ) + '"'
+                    + ' data-notes="'       + escHtml( props.notes || '' ) + '"'
+                    + ' style="cursor:pointer" title="Click to view details"'
+                    + '>';
                     html +=   '<span class="xen-day-modal__dot"></span>';
                     html +=   '<div class="xen-day-modal__item-body">';
                     html +=     '<strong class="xen-day-modal__item-name">' + escHtml( props.item_title || ev.title ) + '</strong>';
@@ -158,6 +196,28 @@
         }
         if ( dayModalBackdrop ) {
             dayModalBackdrop.addEventListener( 'click', hideDayModal );
+        }
+
+        // Clicking a day modal list item (not its action buttons) shows the popover for that item.
+        if ( dayModal ) {
+            dayModal.addEventListener( 'click', function ( e ) {
+                // Skip if the click landed on a button inside the item.
+                if ( e.target.closest( 'button' ) ) return;
+
+                var item = e.target.closest( '.xen-day-modal__item' );
+                if ( ! item ) return;
+
+                var props = {
+                    item_title: item.dataset.itemTitle || '',
+                    borrower:   item.dataset.borrower  || '',
+                    action:     item.dataset.action    || '',
+                    quantity:   item.dataset.qty       || '',
+                    notes:      item.dataset.notes     || '',
+                };
+                fillPopover( props );
+                positionPopover( e.clientX, e.clientY );
+                // Keep day modal open; popover appears beside/above the item.
+            } );
         }
 
         // ------------------------------------------------------------------

@@ -160,6 +160,8 @@ get_header();
     <?php
     $item_logs = \XenInventory\Models\InventoryLog::get_public_logs_for_item( $item_id, 30 );
     $df        = get_option( 'date_format' );
+    $tf        = get_option( 'time_format' );
+    $can_act   = current_user_can( 'xen_return_items' );
     ?>
     <div class="xen-item-detail__history">
         <h2 class="xen-item-detail__history-title"><?php esc_html_e( 'Borrow History', 'xen-inventory' ); ?></h2>
@@ -178,6 +180,9 @@ get_header();
                         <th><?php esc_html_e( 'Qty',       'xen-inventory' ); ?></th>
                         <th><?php esc_html_e( 'Tags',      'xen-inventory' ); ?></th>
                         <th><?php esc_html_e( 'Status',    'xen-inventory' ); ?></th>
+                        <?php if ( $can_act ) : ?>
+                        <th><?php esc_html_e( 'Actions',   'xen-inventory' ); ?></th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -192,10 +197,19 @@ get_header();
                         $borrower    = $log->borrower_full_name ?: $log->borrower_name;
                         $tags        = array_filter( array_map( 'trim', explode( ',', (string) $log->borrow_tags ) ) );
                     ?>
-                    <tr>
+                    <tr class="xen-item-log-row"
+                        data-log-id="<?php echo (int) $log->id; ?>"
+                        data-qty="<?php echo (int) $log->quantity; ?>"
+                        data-borrower="<?php echo esc_attr( $borrower ); ?>"
+                        data-date-borrowed="<?php echo esc_attr( $log->date_borrowed ?? '' ); ?>"
+                        data-date-due="<?php echo esc_attr( $log->date_due ?? '' ); ?>"
+                        data-date-returned="<?php echo esc_attr( $log->date_returned ?? '' ); ?>"
+                        data-notes="<?php echo esc_attr( $log->notes ?? '' ); ?>"
+                        data-status="<?php echo esc_attr( $status_cls ); ?>"
+                    >
                         <td><?php echo esc_html( $borrower ); ?></td>
                         <td><?php echo esc_html( wp_date( $df, strtotime( $log->date_borrowed ) ) ); ?></td>
-                        <td><?php echo $due_ts ? esc_html( wp_date( $df, $due_ts ) ) : '—'; ?></td>
+                        <td><?php echo $due_ts ? esc_html( wp_date( $df . ' ' . $tf, $due_ts ) ) : '—'; ?></td>
                         <td><?php echo $is_returned ? esc_html( wp_date( $df, strtotime( $log->date_returned ) ) ) : '—'; ?></td>
                         <td><?php echo (int) $log->quantity; ?></td>
                         <td>
@@ -214,6 +228,14 @@ get_header();
                                 <?php echo $status_lbl; ?>
                             </span>
                         </td>
+                        <?php if ( $can_act ) : ?>
+                        <td class="xen-item-log-actions">
+                            <button type="button" class="xen-item-log-edit-btn" data-log-id="<?php echo (int) $log->id; ?>"><?php esc_html_e( 'Edit', 'xen-inventory' ); ?></button>
+                            <?php if ( ! $is_returned ) : ?>
+                            <button type="button" class="xen-item-log-return-btn" data-log-id="<?php echo (int) $log->id; ?>" data-qty="<?php echo (int) $log->quantity; ?>"><?php esc_html_e( 'Return', 'xen-inventory' ); ?></button>
+                            <?php endif; ?>
+                        </td>
+                        <?php endif; ?>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -224,6 +246,40 @@ get_header();
 
 </div><!-- .xen-item-detail -->
 </main>
+
+<?php if ( current_user_can( 'xen_return_items' ) ) : ?>
+<!-- Borrow Log Edit Modal (item history quick actions) ------------------->
+<div class="xen-log-edit-modal" id="xen-log-edit-modal" role="dialog" aria-modal="true" aria-labelledby="xen-log-edit-title" hidden>
+    <div class="xen-log-edit-modal__overlay"></div>
+    <div class="xen-log-edit-modal__panel">
+        <button class="xen-log-edit-modal__close" id="xen-log-edit-close" type="button" aria-label="<?php esc_attr_e( 'Close', 'xen-inventory' ); ?>">&#x2715;</button>
+        <h2 class="xen-log-edit-modal__title" id="xen-log-edit-title"><?php esc_html_e( 'Edit Borrow Record', 'xen-inventory' ); ?></h2>
+        <div class="xen-log-edit-modal__meta">
+            <span class="xen-log-edit-modal__borrower" id="xen-log-edit-borrower"></span>
+        </div>
+        <form id="xen-log-edit-form" class="xen-form xen-log-edit-form">
+            <input type="hidden" id="xen-log-edit-id" name="log_id" />
+            <div class="xen-form__group">
+                <label for="xen-log-edit-due"><?php esc_html_e( 'Due Date &amp; Time', 'xen-inventory' ); ?></label>
+                <input type="datetime-local" id="xen-log-edit-due" name="date_due" />
+            </div>
+            <div class="xen-form__group">
+                <label for="xen-log-edit-returned"><?php esc_html_e( 'Date Returned', 'xen-inventory' ); ?></label>
+                <input type="date" id="xen-log-edit-returned" name="date_returned" />
+            </div>
+            <div class="xen-form__group">
+                <label for="xen-log-edit-notes"><?php esc_html_e( 'Notes', 'xen-inventory' ); ?></label>
+                <textarea id="xen-log-edit-notes" name="notes" rows="3"></textarea>
+            </div>
+            <div class="xen-form__actions">
+                <button type="submit" class="xen-btn xen-btn--primary" id="xen-log-edit-save"><?php esc_html_e( 'Save Changes', 'xen-inventory' ); ?></button>
+                <button type="button" class="xen-btn xen-btn--ghost" id="xen-log-edit-cancel"><?php esc_html_e( 'Cancel', 'xen-inventory' ); ?></button>
+            </div>
+            <p class="xen-log-edit-modal__status" id="xen-log-edit-status" aria-live="polite"></p>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php if ( current_user_can( 'xen_borrow_items' ) ) : ?>
 <!-- Borrow Modal ---------------------------------------------------------->

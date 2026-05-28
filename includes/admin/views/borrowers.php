@@ -304,14 +304,12 @@ if ( '' !== $view_entity ) {
                 placeholder="<?php esc_attr_e( 'Filter by name or contact…', 'xen-inventory' ); ?>"
                 aria-label="<?php esc_attr_e( 'Filter borrowers', 'xen-inventory' ); ?>"
             >
-            <div class="xen-borrowers-filters">
-                <select id="xen-borrower-status-filter" class="xen-borrowers-filter-select" aria-label="<?php esc_attr_e( 'Filter by status', 'xen-inventory' ); ?>">
-                    <option value=""><?php esc_html_e( 'All statuses', 'xen-inventory' ); ?></option>
-                    <option value="active"><?php esc_html_e( 'Has active borrows', 'xen-inventory' ); ?></option>
-                    <option value="overdue"><?php esc_html_e( 'Has overdue', 'xen-inventory' ); ?></option>
-                    <option value="returned"><?php esc_html_e( 'Returned only', 'xen-inventory' ); ?></option>
-                </select>
-            </div>
+            <select id="xen-borrower-status-filter" class="xen-borrowers-filter-select" aria-label="<?php esc_attr_e( 'Filter by status', 'xen-inventory' ); ?>">
+                <option value=""><?php esc_html_e( 'All statuses', 'xen-inventory' ); ?></option>
+                <option value="active"><?php esc_html_e( 'Has active borrows', 'xen-inventory' ); ?></option>
+                <option value="overdue"><?php esc_html_e( 'Has overdue', 'xen-inventory' ); ?></option>
+                <option value="returned"><?php esc_html_e( 'Returned only', 'xen-inventory' ); ?></option>
+            </select>
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="xen-borrowers-export-form">
                 <?php wp_nonce_field( 'xen_export_borrowers_csv' ); ?>
                 <input type="hidden" name="action" value="xen_export_borrowers_csv" />

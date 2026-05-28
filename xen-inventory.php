@@ -3,7 +3,7 @@
  * Plugin Name:       XEN Inventory
  * Plugin URI:        https://xenroth.com/xen-inventory
  * Description:       A robust inventory management system for WordPress. Manage departments, items, borrow logs, and availability from a clean admin and frontend interface.
- * Version:           1.5.8
+ * Version:           1.5.9
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Richard C. Cupal, LPT — Xenroth Digital Innovations
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Constants
 // ---------------------------------------------------------------------------
 
-define( 'XEN_INVENTORY_VERSION',    '1.5.8' );
+define( 'XEN_INVENTORY_VERSION',    '1.5.9' );
 define( 'XEN_INVENTORY_FILE',       __FILE__ );
 define( 'XEN_INVENTORY_PATH',       plugin_dir_path( __FILE__ ) );
 define( 'XEN_INVENTORY_URL',        plugin_dir_url( __FILE__ ) );

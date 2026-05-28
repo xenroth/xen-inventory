@@ -130,7 +130,10 @@ class Assets {
                 'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
                 'borrowNonce' => wp_create_nonce( 'xen_borrow_nonce' ),
                 'returnNonce' => wp_create_nonce( 'xen_return_nonce' ),
+                'updateNonce' => wp_create_nonce( 'xen_update_borrow' ),
                 'itemsNonce'  => wp_create_nonce( 'xen_items_nonce' ),
+                'canReturn'   => current_user_can( 'xen_return_items' )   ? 1 : 0,
+                'canEdit'     => current_user_can( 'xen_manage_inventory' ) ? 1 : 0,
                 'i18n'        => [
                     'borrowTitle'         => __( 'Borrow: %s',                                           'xen-inventory' ),
                     'confirmBorrow'       => __( 'Confirm Borrow',                                       'xen-inventory' ),

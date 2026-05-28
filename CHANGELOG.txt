@@ -5,6 +5,46 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.5.9 — 2026-05-30 =
+------------------------------------------------------------------------------
+
+== Added ==
+
+* [Dashboard — Recent Activity] Pagination (20 records/page) with a live
+  filter bar. Staff can search by item name or borrower, filter by action
+  type (Borrowed / Returned) and by status (Open / Returned / Overdue).
+  A "Clear" button removes all active filters.
+
+* [Item Single View — Borrow History] Quick-action buttons in the history
+  table below each item's detail page. Users with the xen_return_items
+  capability see an "Edit" button on every record and a "Return" button
+  on open (unreturned) records. Clicking Edit opens an inline modal to
+  update the due date/time, return date and notes. Clicking Return prompts
+  for quantity (multi-qty items) and calls the existing return AJAX handler.
+  All changes are recorded in the audit log.
+
+* [Frontend — My Borrow History] Double-clicking any row in the "My Borrow
+  History" table opens a detail / edit modal showing the full borrow record.
+  Users with the xen_return_items capability can update notes and dates or
+  mark the item as returned directly from the modal. All changes are
+  recorded in the audit log.
+
+== Fixed ==
+
+* [Calendar — Event Popover] Popover is now positioned with position:fixed
+  and tracks clientX / clientY with viewport-boundary clamping, so it never
+  renders off-screen regardless of page scroll position or window size.
+
+* [Calendar — Day Modal] Clicking an item row inside the day-summary modal
+  now shows the event popover floating near the click point. Previously no
+  such interaction existed and the popover could only be triggered by
+  clicking the chip directly on the calendar grid.
+
+* [Admin — Borrowers Toolbar] Layout hardened with display:flex !important
+  and width:auto !important on child elements to prevent WordPress admin
+  stylesheets from forcing the toolbar items into a vertical stack.
+
+------------------------------------------------------------------------------
 = 1.5.8 — 2026-05-29 =
 ------------------------------------------------------------------------------
 
