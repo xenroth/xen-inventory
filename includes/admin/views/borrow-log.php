@@ -164,6 +164,7 @@ $pages = (int) ceil( $total / $per_page );
                     <th><?php esc_html_e( 'Due',       'xen-inventory' ); ?></th>
                     <th><?php esc_html_e( 'Returned',  'xen-inventory' ); ?></th>
                     <th><?php esc_html_e( 'Notes',     'xen-inventory' ); ?></th>
+                    <th><?php esc_html_e( 'Actions',   'xen-inventory' ); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -186,29 +187,50 @@ $pages = (int) ceil( $total / $per_page );
                                 <?php echo esc_html( ucfirst( $log->action ) ); ?>
                             </span>
                         </td>
-                        <td><?php echo (int) $log->quantity; ?></td>
+                        <td class="xen-log-qty-cell"><?php echo (int) $log->quantity; ?></td>
                         <td><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $log->date_borrowed ) ) ); ?></td>
-                        <td>
+                        <td class="xen-log-due-cell">
                             <?php if ( $log->date_due ) : ?>
                                 <?php
                                 $due_time  = strtotime( $log->date_due );
                                 $is_overdue = ! $log->date_returned && $due_time < time();
                                 ?>
                                 <span <?php if ( $is_overdue ) : ?>class="xen-badge xen-badge--overdue"<?php endif; ?>>
-                                    <?php echo esc_html( wp_date( get_option( 'date_format' ), $due_time ) ); ?>
+                                    <?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $due_time ) ); ?>
                                 </span>
                             <?php else : ?>
                                 —
                             <?php endif; ?>
                         </td>
-                        <td>
+                        <td class="xen-log-returned-cell">
                             <?php if ( $log->date_returned ) : ?>
                                 <?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $log->date_returned ) ) ); ?>
                             <?php else : ?>
                                 <span class="xen-badge xen-badge--open"><?php esc_html_e( 'Open', 'xen-inventory' ); ?></span>
                             <?php endif; ?>
                         </td>
-                        <td><?php echo esc_html( $log->notes ?? '' ); ?></td>
+                        <td class="xen-log-notes-cell"><?php echo esc_html( $log->notes ?? '' ); ?></td>
+                        <td class="xen-log-actions-cell">
+                            <button
+                                type="button"
+                                class="button button-small xen-edit-log"
+                                data-log-id="<?php echo (int) $log->id; ?>"
+                                data-date-due="<?php echo esc_attr( $log->date_due ?? '' ); ?>"
+                                data-date-returned="<?php echo esc_attr( $log->date_returned ?? '' ); ?>"
+                                data-notes="<?php echo esc_attr( $log->notes ?? '' ); ?>"
+                                aria-label="<?php esc_attr_e( 'Edit log entry', 'xen-inventory' ); ?>"
+                            ><?php esc_html_e( 'Edit', 'xen-inventory' ); ?></button>
+                            <?php if ( ! $log->date_returned && 'borrowed' === $log->action ) : ?>
+                            <button
+                                type="button"
+                                class="button button-small button-primary xen-return-log"
+                                data-log-id="<?php echo (int) $log->id; ?>"
+                                data-qty="<?php echo (int) $log->quantity; ?>"
+                                aria-label="<?php esc_attr_e( 'Mark as returned', 'xen-inventory' ); ?>"
+                                style="margin-top:2px;"
+                            ><?php esc_html_e( 'Return', 'xen-inventory' ); ?></button>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

@@ -396,10 +396,6 @@ class InventoryLog {
         foreach ( $rows as $row ) {
             $color = 'returned' === $row->action ? '#27ae60' : '#e74c3c';
 
-            // Use date_returned if available, date_due as fallback, current time
-            // as a last resort so ongoing borrows span correctly to "today".
-            $event_end = $row->date_returned ?? ( $row->date_due ?? $now );
-
             $events[] = [
                 'id'    => (int) $row->id,
                 'title' => sprintf(
@@ -409,7 +405,7 @@ class InventoryLog {
                     $row->borrower_full_name ?: $row->borrower_name
                 ),
                 'start' => $row->date_borrowed,
-                'end'   => $event_end,
+                // No 'end' — events display as single-day markers on the borrow date.
                 'color' => $color,
                 'extendedProps' => [
                     'log_id'        => (int) $row->id,

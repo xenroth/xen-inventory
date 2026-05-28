@@ -99,6 +99,16 @@ class AdminMenu {
             [ $this, 'render_borrowers' ]
         );
 
+        // Audit Log.
+        add_submenu_page(
+            'xen-inventory',
+            __( 'Audit Log',     'xen-inventory' ),
+            __( 'Audit Log',     'xen-inventory' ),
+            'xen_manage_inventory',
+            'xen-audit-log',
+            [ $this, 'render_audit_log' ]
+        );
+
         // Settings.
         add_submenu_page(
             'xen-inventory',
@@ -153,6 +163,22 @@ class AdminMenu {
         }
 
         $template = XEN_INVENTORY_PATH . 'includes/admin/views/borrowers.php';
+        if ( file_exists( $template ) ) {
+            include $template;
+        }
+    }
+
+    /**
+     * Render the audit log admin page.
+     *
+     * @return void
+     */
+    public function render_audit_log(): void {
+        if ( ! current_user_can( 'xen_manage_inventory' ) ) {
+            wp_die( esc_html__( 'You do not have permission to view this page.', 'xen-inventory' ) );
+        }
+
+        $template = XEN_INVENTORY_PATH . 'includes/admin/views/audit-log.php';
         if ( file_exists( $template ) ) {
             include $template;
         }

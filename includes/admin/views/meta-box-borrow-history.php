@@ -49,17 +49,17 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <?php echo esc_html( ucfirst( $log->action ) ); ?>
                         </span>
                     </td>
-                    <td><?php echo (int) $log->quantity; ?></td>
+                    <td class="xen-log-qty-cell"><?php echo (int) $log->quantity; ?></td>
                     <td><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $log->date_borrowed ) ) ); ?></td>
-                    <td><?php echo $log->date_due ? esc_html( wp_date( get_option( 'date_format' ), strtotime( $log->date_due ) ) ) : '—'; ?></td>
-                    <td>
+                    <td class="xen-log-due-cell"><?php echo $log->date_due ? esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $log->date_due ) ) ) : '—'; ?></td>
+                    <td class="xen-log-returned-cell">
                         <?php if ( $log->date_returned ) : ?>
                             <?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $log->date_returned ) ) ); ?>
                         <?php else : ?>
                             <span class="xen-badge xen-badge--open"><?php esc_html_e( 'Open', 'xen-inventory' ); ?></span>
                         <?php endif; ?>
                     </td>
-                    <td><?php echo esc_html( $log->notes ?? '' ); ?></td>
+                    <td class="xen-log-notes-cell"><?php echo esc_html( $log->notes ?? '' ); ?></td>
                     <td>
                         <button
                             type="button"

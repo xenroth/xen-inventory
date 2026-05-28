@@ -103,9 +103,15 @@
                         location.reload();
                     }, 1200 );
                 } else {
+                    var errData = response.data || {};
+                    // Qty exceeded: adjust the quantity field and show an informative warning.
+                    if ( errData.code === 'qty_exceeded' && errData.available ) {
+                        var $qtyField = $form.find( '[name="quantity"]' );
+                        $qtyField.val( errData.available ).attr( 'max', errData.available );
+                    }
                     $message
                         .addClass( 'xen-form__message--error' )
-                        .text( response.data.message || xenInventory.i18n.errorGeneric );
+                        .text( errData.message || xenInventory.i18n.errorGeneric );
                 }
             } )
             .fail( function () {

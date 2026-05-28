@@ -93,14 +93,14 @@
                 const $row       = $btn.closest( 'tr' );
                 const isPartial  = qtyReturned < totalQty;
                 if ( isPartial ) {
-                    // Update qty cell (index 3) and edit-button data.
+                    // Update qty cell and edit-button data.
                     const remaining = totalQty - qtyReturned;
-                    $row.find( 'td:eq(3)' ).text( remaining );
+                    $row.find( '.xen-log-qty-cell' ).text( remaining );
                     $btn.data( 'qty', remaining ).prop( 'disabled', false ).text( orig );
                     $row.find( '.xen-edit-log' ).data( 'date-due', $row.find( '.xen-edit-log' ).data( 'date-due' ) );
                 } else {
                     // Full return — update the Returned cell and remove button.
-                    $row.find( 'td:eq(6)' ).html(
+                    $row.find( '.xen-log-returned-cell' ).html(
                         '<span class="xen-badge xen-badge--returned">' + xenInventoryAdmin.i18n.returned + '</span>'
                     );
                     $btn.remove();
@@ -172,8 +172,8 @@
                 '<td colspan="' + colSpan + '" style="padding:.75rem 1rem;background:#f9f9f9;border-top:none;">' +
                     '<form class="xen-inline-edit-form" style="display:flex;flex-wrap:wrap;gap:.5rem .75rem;align-items:flex-end;">' +
                         '<label style="display:block;font-size:.8125rem;">' +
-                            '<span style="font-weight:600;display:block;">Due Date</span>' +
-                            '<input type="date" name="date_due" value="' + $( '<div>' ).text( dateDue ).html() + '" style="padding:.3rem .5rem;border:1px solid #ccd0d4;border-radius:3px;" />' +
+                            '<span style="font-weight:600;display:block;">Due Date &amp; Time</span>' +
+                            '<input type="datetime-local" name="date_due" value="' + $( '<div>' ).text( dateDue ).html() + '" style="padding:.3rem .5rem;border:1px solid #ccd0d4;border-radius:3px;" />' +
                         '</label>' +
                         '<label style="display:block;font-size:.8125rem;">' +
                             '<span style="font-weight:600;display:block;">Date Returned <small style="font-weight:400;">(blank = still out)</small></span>' +
@@ -229,16 +229,15 @@
                 $editBtn.data( 'date-due',      dateDue );
                 $editBtn.data( 'date-returned', dateReturned );
                 $editBtn.data( 'notes',         notes );
-                // Update the Due cell (index 5) and Returned cell (index 6).
-                $dataRow.find( 'td:eq(5)' ).text( dateDue      || '—' );
-                $dataRow.find( 'td:eq(6)' ).text( dateReturned || '' ).find( '.xen-badge' ).remove();
+                // Update the Due and Returned cells by named class.
+                $dataRow.find( '.xen-log-due-cell' ).text( dateDue      || '—' );
+                $dataRow.find( '.xen-log-notes-cell' ).text( notes );
                 if ( dateReturned ) {
-                    $dataRow.find( 'td:eq(6)' ).text( dateReturned );
+                    $dataRow.find( '.xen-log-returned-cell' ).text( dateReturned );
                     $dataRow.find( '.xen-return-log' ).remove();
                 } else {
-                    $dataRow.find( 'td:eq(6)' ).html( '<span class="xen-badge xen-badge--open">Open</span>' );
+                    $dataRow.find( '.xen-log-returned-cell' ).html( '<span class="xen-badge xen-badge--open">Open</span>' );
                 }
-                $dataRow.find( 'td:eq(7)' ).text( notes );
                 setTimeout( function () { $editRow.remove(); }, 700 );
             } else {
                 var msg = response.data && response.data.message ? response.data.message : 'Error.';

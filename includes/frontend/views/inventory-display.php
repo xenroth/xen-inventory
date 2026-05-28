@@ -266,8 +266,8 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                 </div>
 
                 <div class="xen-form__group">
-                    <label for="xen-borrow-due"><?php esc_html_e( 'Expected Return Date', 'xen-inventory' ); ?></label>
-                    <input type="date" id="xen-borrow-due" name="date_due" />
+                    <label for="xen-borrow-due"><?php esc_html_e( 'Expected Return Date &amp; Time', 'xen-inventory' ); ?></label>
+                    <input type="datetime-local" id="xen-borrow-due" name="date_due" />
                 </div>
 
                 <div class="xen-form__group">

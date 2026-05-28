@@ -101,8 +101,8 @@ class AjaxHandlers {
             wp_send_json_error( [ 'message' => __( 'Invalid item.', 'xen-inventory' ) ], 400 );
         }
 
-        // Validate date_due format if provided.
-        if ( $date_due && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_due ) ) {
+        // Validate date_due format if provided (accepts YYYY-MM-DD or YYYY-MM-DDTHH:MM).
+        if ( $date_due && ! preg_match( '/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/', $date_due ) ) {
             wp_send_json_error( [ 'message' => __( 'Invalid date format.', 'xen-inventory' ) ], 400 );
         }
 
@@ -114,8 +114,10 @@ class AjaxHandlers {
         if ( $quantity > $available ) {
             wp_send_json_error(
                 [
-                    /* translators: %d: number of units available */
-                    'message' => sprintf( __( 'Only %d unit(s) available.', 'xen-inventory' ), $available ),
+                    'code'      => 'qty_exceeded',
+                    /* translators: 1: available units, 2: requested units */
+                    'message'   => sprintf( __( 'Only %1$d unit(s) available, but you\'re requesting %2$d. The quantity has been adjusted to the maximum available.', 'xen-inventory' ), $available, $quantity ),
+                    'available' => $available,
                 ],
                 400
             );
@@ -131,7 +133,7 @@ class AjaxHandlers {
             'action'             => 'borrowed',
             'quantity'           => $quantity,
             'date_borrowed'      => current_time( 'mysql', true ), // UTC.
-            'date_due'           => $date_due ? $date_due . ' 00:00:00' : null,
+            'date_due'           => $date_due ? ( str_replace( 'T', ' ', $date_due ) . ( strpos( $date_due, 'T' ) !== false ? ':00' : ' 00:00:00' ) ) : null,
             'notes'              => $notes,
         ] );
 
@@ -141,6 +143,12 @@ class AjaxHandlers {
             if ( $available_after <= 0 ) {
                 update_post_meta( $item_id, '_xen_item_status', 'borrowed' );
             }
+            \XenInventory\Core\AuditLog::record( 'borrow', 'item', $item_id, $post->post_title, [
+                'log_id'             => $result,
+                'borrower'           => $borrower_full_name,
+                'quantity'           => $quantity,
+                'date_due'           => $date_due,
+            ] );
             wp_send_json_success( [ 'message' => __( 'Item borrowed successfully.', 'xen-inventory' ) ] );
         } else {
             wp_send_json_error( [ 'message' => __( 'Could not log the borrow action.', 'xen-inventory' ) ], 500 );
@@ -182,6 +190,10 @@ class AjaxHandlers {
         }
 
         if ( $ok ) {
+            \XenInventory\Core\AuditLog::record( 'return', 'log', $log_id, 'Log #' . $log_id, [
+                'qty_returned' => $qty_returned ?: 'all',
+                'notes'        => $notes,
+            ] );
             wp_send_json_success( [ 'message' => __( 'Item returned successfully.', 'xen-inventory' ) ] );
         } else {
             wp_send_json_error( [ 'message' => __( 'Could not update the log entry.', 'xen-inventory' ) ], 500 );
@@ -216,9 +228,9 @@ class AjaxHandlers {
 
         if ( ! empty( $_POST['date_due'] ) ) {
             $date_due = sanitize_text_field( wp_unslash( $_POST['date_due'] ) );
-            // Validate format YYYY-MM-DD.
-            if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_due ) ) {
-                $data['date_due'] = $date_due;
+            // Validate format YYYY-MM-DD or YYYY-MM-DDTHH:MM.
+            if ( preg_match( '/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/', $date_due ) ) {
+                $data['date_due'] = str_replace( 'T', ' ', $date_due ) . ( strpos( $date_due, 'T' ) !== false ? ':00' : '' );
             }
         }
 
@@ -241,6 +253,7 @@ class AjaxHandlers {
         $ok = \XenInventory\Models\InventoryLog::update_log( $log_id, $data );
 
         if ( $ok ) {
+            \XenInventory\Core\AuditLog::record( 'update', 'log', $log_id, 'Log #' . $log_id, $data );
             wp_send_json_success( [ 'message' => __( 'Record updated.', 'xen-inventory' ) ] );
         } else {
             wp_send_json_error( [ 'message' => __( 'Could not update the record.', 'xen-inventory' ) ], 500 );
@@ -407,6 +420,7 @@ class AjaxHandlers {
         $deleted = \XenInventory\Models\InventoryLog::delete_log( $log_id );
 
         if ( $deleted ) {
+            \XenInventory\Core\AuditLog::record( 'delete', 'log', $log_id, 'Log #' . $log_id );
             wp_send_json_success( [ 'message' => __( 'Log entry deleted.', 'xen-inventory' ) ] );
         } else {
             wp_send_json_error( [ 'message' => __( 'Could not delete the log entry.', 'xen-inventory' ) ], 500 );

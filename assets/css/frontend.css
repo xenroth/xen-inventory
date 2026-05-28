@@ -1167,6 +1167,40 @@
     font-style: italic;
 }
 
+.xen-day-modal__item-actions {
+    display: flex;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.xen-cal-edit-btn,
+.xen-cal-return-btn {
+    padding: 0.2rem 0.625rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.xen-cal-edit-btn {
+    background: #e0e7ff;
+    color: #3730a3;
+    border-color: #c7d2fe;
+}
+.xen-cal-edit-btn:hover { background: #c7d2fe; }
+
+.xen-cal-return-btn {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #bbf7d0;
+}
+.xen-cal-return-btn:hover { background: #bbf7d0; }
+.xen-cal-return-btn:disabled,
+.xen-cal-edit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
 /* Day modal — centered on wider screens */
 @media (min-width: 641px) {
     .xen-day-modal {

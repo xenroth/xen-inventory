@@ -79,9 +79,9 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <div class="xen-edit-modal__row">
                         <div class="xen-edit-modal__field">
                             <label class="xen-edit-modal__label" for="xen-edit-date-due">
-                                <?php esc_html_e( 'Due Date', 'xen-inventory' ); ?>
+                                <?php esc_html_e( 'Due Date &amp; Time', 'xen-inventory' ); ?>
                             </label>
-                            <input type="date" id="xen-edit-date-due" name="date_due" class="xen-edit-modal__input" />
+                            <input type="datetime-local" id="xen-edit-date-due" name="date_due" class="xen-edit-modal__input" />
                         </div>
 
                         <div class="xen-edit-modal__field">

@@ -5,6 +5,55 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.5.8 — 2026-05-29 =
+------------------------------------------------------------------------------
+
+== Added ==
+
+* [Admin — Borrowers] Toolbar UI overhaul. The export button, search
+  field and status filter are now arranged in a single horizontal flex row
+  instead of stacking, preventing the export button from sticking or being
+  obscured at smaller widths.
+
+* [Admin — Borrow Log / Borrowers Detail] Quick-action buttons per row:
+  "Return" for open/partial-returned records and "Edit" for any record.
+  Actions execute inline via AJAX without leaving the page. The same
+  quick actions also appear in the item-level Borrow History meta box.
+
+* [Borrow Flow — Expected Return Date] The due-date field now accepts a
+  date AND time (datetime-local input). The full datetime is stored in the
+  database as YYYY-MM-DD HH:MM:SS, enabling precise overdue detection.
+  "Returned late" / "Overdue" notes are preserved.
+
+* [Borrow Flow — Qty Warning] When the requested borrow quantity exceeds
+  available stock, the form no longer shows a hard error. Instead it
+  updates the qty field to the available amount and shows an informational
+  message so the borrower can proceed with the remaining stock.
+
+* [Calendar — Event Display] Borrow events no longer span from borrow date
+  to return date. Each entry renders as a single-day marker on the borrow
+  date for a cleaner calendar grid.
+
+* [Calendar — Popover Positioning] The event-detail bubble now appears
+  near the mouse-click position rather than anchored to the event element's
+  bounding box, improving accuracy on dense calendars.
+
+* [Calendar — Quick Actions] Clicking a day opens the existing day-summary
+  modal. Each listed entry now has "Edit" and "Return" buttons (shown to
+  users with edit permission). Actions execute inline and the calendar
+  refreshes automatically on success.
+
+* [Audit Log] New "Audit Log" admin page (XEN Inventory → Audit Log).
+  Every borrow, return, update, delete, and purge action is recorded with
+  the acting user, affected object, contextual details, IP address, and a
+  UTC timestamp. Filterable by action type and date range with pagination.
+
+== Changed ==
+
+* Calendar edit modal and admin inline-edit form now use datetime-local
+  inputs for the due-date field so time can be set or adjusted.
+
+------------------------------------------------------------------------------
 = 1.5.7 — 2026-05-28 =
 ------------------------------------------------------------------------------
 

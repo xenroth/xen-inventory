@@ -26,6 +26,7 @@ class Activator {
      */
     public static function activate(): void {
         self::create_log_table();
+        self::create_audit_table();
         self::add_roles_and_capabilities();
 
         // Store version so we can run upgrade routines later.
@@ -91,6 +92,50 @@ class Activator {
     }
 
     /**
+     * Create the wp_xen_audit_log table.
+     *
+     * Schema:
+     *   id          — Primary key.
+     *   user_id     — WP user who performed the action (0 = system/cron).
+     *   user_name   — Display name at time of action (denormalised).
+     *   action      — Short action key, e.g. 'borrow', 'return', 'update', 'delete'.
+     *   object_type — What was affected, e.g. 'item', 'log'.
+     *   object_id   — Primary key of the affected object.
+     *   label       — Human-readable name of the object.
+     *   details     — JSON blob with contextual data.
+     *   ip          — Remote IP address.
+     *   created_at  — UTC timestamp.
+     *
+     * @return void
+     */
+    private static function create_audit_table(): void {
+        global $wpdb;
+
+        $table_name      = $wpdb->prefix . XEN_AUDIT_LOG_TABLE;
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE {$table_name} (
+            id          BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id     BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
+            user_name   VARCHAR(200)        NOT NULL DEFAULT '',
+            action      VARCHAR(100)        NOT NULL DEFAULT '',
+            object_type VARCHAR(50)         NOT NULL DEFAULT '',
+            object_id   BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
+            label       VARCHAR(255)        NOT NULL DEFAULT '',
+            details     TEXT,
+            ip          VARCHAR(45)         NOT NULL DEFAULT '',
+            created_at  DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY user_id (user_id),
+            KEY action (action),
+            KEY created_at (created_at)
+        ) {$charset_collate};";
+
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        dbDelta( $sql );
+    }
+
+    /**
      * Run any pending schema upgrades.
      *
      * Called on every plugin init. The `dbDelta` inside `create_log_table()`
@@ -103,7 +148,8 @@ class Activator {
     public static function maybe_upgrade(): void {
         $stored = get_option( 'xen_inventory_version', '0.0.0' );
         if ( version_compare( $stored, XEN_INVENTORY_VERSION, '<' ) ) {
-            self::create_log_table(); // dbDelta handles ADD COLUMN automatically.
+            self::create_log_table();   // dbDelta handles ADD COLUMN automatically.
+            self::create_audit_table(); // Idempotent — creates table if not present.
             update_option( 'xen_inventory_version', XEN_INVENTORY_VERSION );
 
             // Schedule a one-time rewrite flush so any CPT/archive rule changes

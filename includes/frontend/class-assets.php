@@ -105,6 +105,7 @@ class Assets {
                 'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
                 'nonce'        => wp_create_nonce( 'xen_calendar_nonce' ),
                 'updateNonce'  => wp_create_nonce( 'xen_update_borrow' ),
+                'returnNonce'  => wp_create_nonce( 'xen_return_nonce' ),
                 'canEdit'      => current_user_can( 'xen_return_items' ) ? 1 : 0,
                 'locale'       => $fc_locale,
                 'firstDay'     => (int) get_option( 'start_of_week' ),

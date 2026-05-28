@@ -54,10 +54,11 @@
             popQty.textContent    = props.quantity   || '';
             popNotes.textContent  = props.notes      || '—';
 
-            // Position near the clicked element.
-            const rect = info.el.getBoundingClientRect();
-            popover.style.top  = ( rect.bottom + window.scrollY + 8 ) + 'px';
-            popover.style.left = ( rect.left   + window.scrollX     ) + 'px';
+            // Position near the mouse click location.
+            var mouseX = ( info.jsEvent.pageX || 0 );
+            var mouseY = ( info.jsEvent.pageY || 0 );
+            popover.style.top  = ( mouseY + 12 ) + 'px';
+            popover.style.left = ( mouseX + 8  ) + 'px';
 
             popover.removeAttribute( 'hidden' );
         }
@@ -102,17 +103,14 @@
                     var props     = ev.extendedProps || {};
                     var isReturned = !! props.date_returned;
                     var statusCls  = isReturned ? 'returned' : 'borrowed';
+                    var logId      = props.log_id || ev.id || '';
 
                     // Date range label.
                     var startLabel = ev.start
                         ? ev.start.toLocaleDateString( locale, { month: 'short', day: 'numeric' } )
                         : '';
-                    var endLabel   = ev.end && ! isReturned
-                        ? ev.end.toLocaleDateString( locale, { month: 'short', day: 'numeric' } )
-                        : '';
-                    var rangeLabel = startLabel + ( endLabel && endLabel !== startLabel ? ' – ' + endLabel : '' );
 
-                    html += '<li class="xen-day-modal__item xen-day-modal__item--' + statusCls + '">';
+                    html += '<li class="xen-day-modal__item xen-day-modal__item--' + statusCls + '" data-log-id="' + escHtml( logId ) + '">';
                     html +=   '<span class="xen-day-modal__dot"></span>';
                     html +=   '<div class="xen-day-modal__item-body">';
                     html +=     '<strong class="xen-day-modal__item-name">' + escHtml( props.item_title || ev.title ) + '</strong>';
@@ -121,14 +119,23 @@
                     }
                     html +=     '<div class="xen-day-modal__item-meta">';
                     html +=       '<span class="xen-day-modal__item-qty">×' + escHtml( props.quantity || 1 ) + '</span>';
-                    if ( rangeLabel ) {
-                        html +=   '<span class="xen-day-modal__item-range">' + escHtml( rangeLabel ) + '</span>';
+                    if ( startLabel ) {
+                        html +=   '<span class="xen-day-modal__item-range">' + escHtml( startLabel ) + '</span>';
                     }
                     html +=       '<span class="xen-day-modal__item-status xen-day-modal__item-status--' + statusCls + '">'
                                     + escHtml( isReturned ? 'Returned' : 'Active' ) + '</span>';
                     html +=     '</div>';
                     if ( props.notes ) {
                         html += '<p class="xen-day-modal__item-notes">' + escHtml( props.notes ) + '</p>';
+                    }
+                    // Quick action buttons for admins.
+                    if ( parseInt( xenCalendar.canEdit, 10 ) ) {
+                        html += '<div class="xen-day-modal__item-actions">';
+                        html +=   '<button type="button" class="xen-cal-edit-btn" data-log-id="' + escHtml( logId ) + '">Edit</button>';
+                        if ( ! isReturned ) {
+                            html += '<button type="button" class="xen-cal-return-btn" data-log-id="' + escHtml( logId ) + '" data-qty="' + escHtml( props.quantity || 1 ) + '">Return</button>';
+                        }
+                        html += '</div>';
                     }
                     html +=   '</div>';
                     html += '</li>';
@@ -151,6 +158,76 @@
         }
         if ( dayModalBackdrop ) {
             dayModalBackdrop.addEventListener( 'click', hideDayModal );
+        }
+
+        // ------------------------------------------------------------------
+        // Day modal quick actions — Edit and Return buttons.
+        // ------------------------------------------------------------------
+
+        if ( dayModal ) {
+            dayModal.addEventListener( 'click', function ( e ) {
+                var editBtn   = e.target.closest( '.xen-cal-edit-btn' );
+                var returnBtn = e.target.closest( '.xen-cal-return-btn' );
+
+                if ( editBtn ) {
+                    var logId = editBtn.getAttribute( 'data-log-id' );
+                    // Find the matching loaded calendar event by log_id.
+                    var matchEvent = null;
+                    calendar.getEvents().forEach( function ( ev ) {
+                        if ( String( ev.extendedProps.log_id ) === String( logId ) || String( ev.id ) === String( logId ) ) {
+                            matchEvent = ev;
+                        }
+                    } );
+                    if ( matchEvent ) {
+                        openEditModal( matchEvent );
+                    }
+                }
+
+                if ( returnBtn ) {
+                    var logId  = returnBtn.getAttribute( 'data-log-id' );
+                    var qty    = parseInt( returnBtn.getAttribute( 'data-qty' ) || 1, 10 );
+                    var answer = qty > 1
+                        ? window.prompt( 'How many items are being returned? (1 – ' + qty + ')', qty )
+                        : ( window.confirm( 'Mark this item as returned?' ) ? qty : null );
+
+                    if ( answer === null ) return;
+                    var qtyReturned = parseInt( answer, 10 );
+                    if ( isNaN( qtyReturned ) || qtyReturned < 1 || qtyReturned > qty ) {
+                        alert( 'Please enter a number between 1 and ' + qty + '.' );
+                        return;
+                    }
+
+                    returnBtn.disabled = true;
+                    returnBtn.textContent = 'Saving…';
+
+                    var body = new URLSearchParams( {
+                        action:       'xen_return_item',
+                        nonce:        xenCalendar.returnNonce,
+                        log_id:       logId,
+                        qty_returned: qtyReturned,
+                        notes:        '',
+                    } );
+
+                    fetch( xenCalendar.ajaxUrl, { method: 'POST', body: body } )
+                        .then( function ( res ) { return res.json(); } )
+                        .then( function ( data ) {
+                            if ( data.success ) {
+                                calendar.refetchEvents();
+                                hideDayModal();
+                            } else {
+                                var msg = data.data && data.data.message ? data.data.message : 'Error.';
+                                alert( msg );
+                                returnBtn.disabled = false;
+                                returnBtn.textContent = 'Return';
+                            }
+                        } )
+                        .catch( function () {
+                            alert( 'Network error. Please try again.' );
+                            returnBtn.disabled = false;
+                            returnBtn.textContent = 'Return';
+                        } );
+                }
+            } );
         }
 
         // ------------------------------------------------------------------
@@ -178,8 +255,9 @@
             editLogId.value        = event.id || props.log_id || '';
             editItemName.textContent = props.item_title || event.title || '';
             editBorrower.textContent = props.borrower   || '';
-            editDateDue.value        = props.date_due      ? props.date_due.split( 'T' )[ 0 ]      : '';
-            editDateReturned.value   = props.date_returned ? props.date_returned.split( 'T' )[ 0 ] : '';
+            // Preserve time if present; datetime-local input expects "YYYY-MM-DDTHH:MM".
+            editDateDue.value        = props.date_due      ? props.date_due.replace( ' ', 'T' ).substring( 0, 16 )      : '';
+            editDateReturned.value   = props.date_returned ? props.date_returned.replace( ' ', 'T' ).substring( 0, 16 ) : '';
             editNotes.value          = props.notes || '';
             editStatus.textContent   = '';
             editStatus.className     = 'xen-edit-modal__status';

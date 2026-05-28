@@ -168,6 +168,7 @@ if ( '' !== $view_entity ) {
                         <th><?php esc_html_e( 'Returned',   'xen-inventory' ); ?></th>
                         <th><?php esc_html_e( 'Status',     'xen-inventory' ); ?></th>
                         <th><?php esc_html_e( 'Notes',      'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Actions',    'xen-inventory' ); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -201,18 +202,18 @@ if ( '' !== $view_entity ) {
                                 <?php echo esc_html( ucfirst( $log->action ) ); ?>
                             </span>
                         </td>
-                        <td><?php echo (int) $log->quantity; ?></td>
+                        <td class="xen-log-qty-cell"><?php echo (int) $log->quantity; ?></td>
                         <td><?php echo esc_html( wp_date( $date_fmt, strtotime( $log->date_borrowed ) ) ); ?></td>
-                        <td>
+                        <td class="xen-log-due-cell">
                             <?php if ( $due_time ) : ?>
                                 <span class="<?php echo $is_overdue ? 'xen-badge xen-badge--overdue' : ''; ?>">
-                                    <?php echo esc_html( wp_date( $date_fmt, $due_time ) ); ?>
+                                    <?php echo esc_html( wp_date( $date_fmt . ' ' . get_option( 'time_format' ), $due_time ) ); ?>
                                 </span>
                             <?php else : ?>
                                 —
                             <?php endif; ?>
                         </td>
-                        <td>
+                        <td class="xen-log-returned-cell">
                             <?php echo $log->date_returned
                                 ? esc_html( wp_date( $date_fmt, strtotime( $log->date_returned ) ) )
                                 : '—'; ?>
@@ -222,7 +223,28 @@ if ( '' !== $view_entity ) {
                                 <?php echo esc_html( $status_label ); ?>
                             </span>
                         </td>
-                        <td class="xen-notes-cell"><?php echo esc_html( $log->notes ?? '' ); ?></td>
+                        <td class="xen-notes-cell xen-log-notes-cell"><?php echo esc_html( $log->notes ?? '' ); ?></td>
+                        <td class="xen-log-actions-cell">
+                            <button
+                                type="button"
+                                class="button button-small xen-edit-log"
+                                data-log-id="<?php echo (int) $log->id; ?>"
+                                data-date-due="<?php echo esc_attr( $log->date_due ?? '' ); ?>"
+                                data-date-returned="<?php echo esc_attr( $log->date_returned ?? '' ); ?>"
+                                data-notes="<?php echo esc_attr( $log->notes ?? '' ); ?>"
+                                aria-label="<?php esc_attr_e( 'Edit log entry', 'xen-inventory' ); ?>"
+                            ><?php esc_html_e( 'Edit', 'xen-inventory' ); ?></button>
+                            <?php if ( ! $log->date_returned && 'borrowed' === $log->action ) : ?>
+                            <button
+                                type="button"
+                                class="button button-small button-primary xen-return-log"
+                                data-log-id="<?php echo (int) $log->id; ?>"
+                                data-qty="<?php echo (int) $log->quantity; ?>"
+                                aria-label="<?php esc_attr_e( 'Mark as returned', 'xen-inventory' ); ?>"
+                                style="margin-top:2px;"
+                            ><?php esc_html_e( 'Return', 'xen-inventory' ); ?></button>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
@@ -264,16 +286,6 @@ if ( '' !== $view_entity ) {
                     ?>
                 </p>
             </div>
-            <?php if ( ! empty( $borrowers ) ) : ?>
-            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="xen-borrowers-export-form">
-                <?php wp_nonce_field( 'xen_export_borrowers_csv' ); ?>
-                <input type="hidden" name="action" value="xen_export_borrowers_csv" />
-                <button type="submit" class="button">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    <?php esc_html_e( 'Export CSV', 'xen-inventory' ); ?>
-                </button>
-            </form>
-            <?php endif; ?>
         </div>
 
         <?php if ( empty( $borrowers ) ) : ?>
@@ -283,7 +295,7 @@ if ( '' !== $view_entity ) {
             </div>
         <?php else : ?>
 
-        <!-- Live search + filter bar -->
+        <!-- Live search + filter + export toolbar -->
         <div class="xen-borrowers-toolbar">
             <input
                 type="search"
@@ -300,6 +312,14 @@ if ( '' !== $view_entity ) {
                     <option value="returned"><?php esc_html_e( 'Returned only', 'xen-inventory' ); ?></option>
                 </select>
             </div>
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="xen-borrowers-export-form">
+                <?php wp_nonce_field( 'xen_export_borrowers_csv' ); ?>
+                <input type="hidden" name="action" value="xen_export_borrowers_csv" />
+                <button type="submit" class="button">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <?php esc_html_e( 'Export CSV', 'xen-inventory' ); ?>
+                </button>
+            </form>
         </div>
 
         <div class="xen-table-wrap">

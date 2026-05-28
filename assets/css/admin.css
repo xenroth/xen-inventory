@@ -189,13 +189,10 @@
     line-height: 1.5;
 }
 
-/* Search / filter toolbar */
-.xen-borrowers-toolbar {
-    margin: 0 0 1rem;
-}
+/* Search / filter toolbar (layout rules live in the responsive block below) */
 
 .xen-borrowers-search {
-    width: 100%;
+    flex: 1 1 180px;
     max-width: 360px;
     padding: 0.5rem 0.75rem 0.5rem 2.25rem;
     border: 1px solid #e2e8f0;
@@ -796,7 +793,7 @@ details.xen-guide-details[open] > summary.xen-info-card__title::after {
 }
 
 /* ==========================================================================
-   Borrowers toolbar (search + filter)
+   Borrowers toolbar (search + filter + export)
    ========================================================================== */
 
 .xen-borrowers-toolbar {
@@ -804,13 +801,14 @@ details.xen-guide-details[open] > summary.xen-info-card__title::after {
     align-items: center;
     flex-wrap: wrap;
     gap: 0.625rem;
-    margin-bottom: 0.875rem;
+    margin-bottom: 1rem;
 }
 
 .xen-borrowers-filters {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .xen-borrowers-filter-select {
