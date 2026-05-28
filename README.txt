@@ -4,7 +4,7 @@ Tags:               inventory, management, borrow, tracking, departments
 Requires at least:  6.0
 Tested up to:       6.7
 Requires PHP:       8.0
-Stable tag:         1.0.0
+Stable tag:         1.1.0
 License:            GPLv2 or later
 License URI:        https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,15 @@ entries remain untouched. Data is only removed when you **delete** the plugin
 and confirm the uninstall action.
 
 == Changelog ==
+
+= 1.1.0 — 2026-05-28 =
+* Fix duplicate XEN Inventory entry in the WordPress admin sidebar.
+* Add Return UI: Return buttons in admin Borrow History meta box and a
+  "My Active Borrows" section on the frontend inventory display.
+* Add GitHub auto/manual updater integrated with the WordPress update system.
+* Add Shortcode Reference panel to the admin Dashboard.
+* Add mobile-responsive CSS for admin and frontend.
+* See CHANGELOG.txt for the full details.
 
 = 1.0.0 — 2026-05-28 =
 * Initial release.

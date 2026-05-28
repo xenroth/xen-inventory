@@ -1,0 +1,87 @@
+= XEN Inventory Changelog =
+
+All notable changes to this project are documented in this file.
+Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
+Versions follow Semantic Versioning (https://semver.org/).
+
+------------------------------------------------------------------------------
+= 1.1.0 — 2026-05-28 =
+------------------------------------------------------------------------------
+
+== Bug Fixes ==
+
+* Fixed duplicate "XEN Inventory" entry in the WordPress admin sidebar.
+  The `xen_item` CPT was registered with `show_in_menu => true`, which caused
+  WordPress to generate its own top-level menu alongside the one created by
+  AdminMenu. Changed to `show_in_menu => false` so AdminMenu is the sole owner.
+
+== New Features ==
+
+* Return UI — staff now have a way to return borrowed items.
+  - Added `InventoryLog::get_open_borrows_for_user()` model method.
+  - Added **Return** button to each open row in the admin Borrow History
+    meta box (item edit screen).
+  - Added **My Active Borrows** section below the inventory grid on the
+    frontend: shows every open borrow for the current user with due-date
+    highlighting, an optional notes field, and a Return button.
+  - Return AJAX handler (`xen_return_item`) already existed and is unchanged.
+
+* GitHub Auto/Manual Updater — the plugin now integrates with WordPress's
+  built-in update system and checks GitHub for new release tags.
+  - Automatic background checks every 12 hours (same cycle as WP core).
+  - "Check for updates" action link on the Plugins list page for on-demand
+    checks (nonce-protected, requires `update_plugins` capability).
+  - "View version X.X.X details" popup in the update notice row is populated
+    with the GitHub release body (changelog) and release metadata.
+  - Post-update hook busts the cached release data so the next check is fresh.
+  - Source-folder fix: renames the GitHub archive zip extraction directory
+    (e.g. `xen-inventory-1.1.0/`) to `xen-inventory/` before WordPress
+    overwrites the plugin folder.
+  - Optional GitHub Personal Access Token stored in Settings for higher API
+    rate limits (60 unauthenticated → 5,000 authenticated requests/hour).
+
+* Shortcode Reference Panel — added to the admin Dashboard page. Three cards
+  (one per shortcode) with available attributes listed and a one-click
+  Copy to Clipboard button for each shortcode string.
+
+== Improvements ==
+
+* `admin.js` — added Return log handler (`.xen-return-log`) and
+  Copy-to-clipboard handler (`.xen-copy-shortcode`) with a fallback for
+  browsers that do not support the Clipboard API.
+* `frontend.js` — return success handler is now context-aware: fades out the
+  `.xen-return-row` in all cases and additionally updates the status badge when
+  the button is inside an `.xen-item-card`.
+* Admin localized script — added `returnNonce` and new i18n strings
+  (`confirmReturn`, `returned`, `copied`).
+* Frontend localized script — added missing `borrowTitle`, `confirmBorrow`,
+  `saving`, and `available` i18n strings.
+
+== Mobile Responsiveness ==
+
+* `admin.css` — added `@media (max-width: 782px)` breakpoint (WordPress
+  standard): stat cards wrap 2-per-row → 1-per-row at 480 px, filter forms
+  stack vertically, log/history tables get horizontal scroll.
+* `frontend.css` — added `@media (max-width: 640px)` breakpoint: filter bar
+  stacks, borrow modal is near-fullscreen, borrow-detail image stacks above
+  text, calendar popover is fixed to the bottom of the screen, and My Active
+  Borrows rows stack vertically.
+
+------------------------------------------------------------------------------
+= 1.0.0 — 2026-05-28 =
+------------------------------------------------------------------------------
+
+* Initial release.
+* Custom Post Type `xen_item` with status, quantity, and date-added meta.
+* Custom Taxonomy `xen_department` (hierarchical).
+* Custom DB table `wp_xen_inventory_logs` for borrow/return event tracking.
+* Custom role `xen_staff` with granular inventory capabilities.
+* Admin: dashboard with stats and recent activity, item edit screen with
+  borrow history meta box, filterable borrow log page, settings page.
+* Frontend shortcodes: `[xen_inventory_display]`, `[xen_inventory_calendar]`,
+  `[xen_inventory_login]`.
+* FullCalendar v6.1.11 calendar view with AJAX-powered event feed.
+* Clean URL rewrite rules: /inventory/, /inventory/calendar/, /inventory/login/.
+* Nonce verification, capability checks, and input sanitisation throughout.
+* i18n-ready with .pot file.
+* Safe uninstall: drops custom table and options on plugin deletion.
