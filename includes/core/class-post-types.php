@@ -60,7 +60,7 @@ class PostTypes {
             'rewrite'            => [ 'slug' => 'inventory-item', 'with_front' => false ],
             'capability_type'    => 'post',
             'map_meta_cap'       => true,
-            'has_archive'        => 'inventory',   // /inventory/ archive page.
+            'has_archive'        => false,          // Disable CPT archive so it never conflicts with a page slug (e.g. /inventory/).
             'hierarchical'       => false,
             'menu_position'      => 25,
             'menu_icon'          => 'dashicons-archive',

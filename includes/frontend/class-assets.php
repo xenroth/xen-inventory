@@ -42,11 +42,19 @@ class Assets {
         // have no associated WP post object.
         $xen_view = get_query_var( 'xen_view' );
 
+        // Prefer get_queried_object() over $post global — it is reliable even
+        // when the main query context is ambiguous (e.g. a Page whose slug
+        // previously conflicted with the CPT archive URL).
+        $page_post = get_queried_object();
+        if ( ! ( $page_post instanceof \WP_Post ) ) {
+            $page_post = is_a( $post, 'WP_Post' ) ? $post : null;
+        }
+
         // Whether a XEN shortcode is present on the current page post.
-        $has_xen_shortcode = is_a( $post, 'WP_Post' ) && (
-            has_shortcode( $post->post_content, 'xen_inventory_display' )
-            || has_shortcode( $post->post_content, 'xen_inventory_calendar' )
-            || has_shortcode( $post->post_content, 'xen_inventory_login' )
+        $has_xen_shortcode = ( $page_post instanceof \WP_Post ) && (
+            has_shortcode( $page_post->post_content, 'xen_inventory_display' )
+            || has_shortcode( $page_post->post_content, 'xen_inventory_calendar' )
+            || has_shortcode( $page_post->post_content, 'xen_inventory_login' )
         );
 
         // Bail if neither a shortcode page nor a XEN rewrite view nor a single item page.
@@ -63,7 +71,7 @@ class Assets {
         );
 
         // FullCalendar — loaded for the calendar shortcode and the /inventory/calendar/ view.
-        $needs_calendar = ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'xen_inventory_calendar' ) )
+        $needs_calendar = ( ( $page_post instanceof \WP_Post ) && has_shortcode( $page_post->post_content, 'xen_inventory_calendar' ) )
             || 'calendar' === $xen_view;
 
         if ( $needs_calendar ) {
@@ -102,7 +110,7 @@ class Assets {
         }
 
         // Inventory display / borrow JS.
-        $needs_frontend_js = ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'xen_inventory_display' ) )
+        $needs_frontend_js = ( ( $page_post instanceof \WP_Post ) && has_shortcode( $page_post->post_content, 'xen_inventory_display' ) )
             || 'borrow' === $xen_view
             || is_singular( 'xen_item' );
 

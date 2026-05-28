@@ -105,7 +105,28 @@ class Activator {
         if ( version_compare( $stored, XEN_INVENTORY_VERSION, '<' ) ) {
             self::create_log_table(); // dbDelta handles ADD COLUMN automatically.
             update_option( 'xen_inventory_version', XEN_INVENTORY_VERSION );
+
+            // Schedule a one-time rewrite flush so any CPT/archive rule changes
+            // take effect automatically on the next admin page load.
+            update_option( 'xen_inventory_flush_rewrites', '1' );
         }
+
+        // Perform the deferred flush on admin requests only (safe and cheap).
+        if ( is_admin() && get_option( 'xen_inventory_flush_rewrites' ) ) {
+            add_action( 'admin_init', [ __CLASS__, 'flush_rewrites_once' ] );
+        }
+    }
+
+    /**
+     * Flush rewrite rules once and clear the flag.
+     *
+     * Hooked to admin_init so all CPTs/taxonomies are already registered.
+     *
+     * @return void
+     */
+    public static function flush_rewrites_once(): void {
+        flush_rewrite_rules( false ); // soft flush (rewrites disk cache only).
+        delete_option( 'xen_inventory_flush_rewrites' );
     }
 
     // -----------------------------------------------------------------------

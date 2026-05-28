@@ -5,6 +5,38 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.5.2 — 2026-05-28 =
+------------------------------------------------------------------------------
+
+== Bug Fixes ==
+
+* [Moderate] Item card images cropped to fill the square area.
+  The `.xen-item-card__img` rule used `object-fit: cover`, which scales the
+  photo to fill the 1:1 container, cropping the top/bottom or sides of
+  non-square images. The full product photo was never visible.
+  Fix: changed to `object-fit: contain` so the entire image is always shown
+  inside the card area, letterboxed against the existing light-gray background.
+  Same fix applied to the single-item detail page hero image.
+
+* [Critical] [xen_inventory_display] shortcode page breaks when page slug
+  equals "inventory".
+  Root cause: the `xen_item` CPT was registered with `has_archive => 'inventory'`,
+  which adds a rewrite rule `^inventory/?$` that WordPress inserts with higher
+  priority than the matching page-slug rule. Visiting /inventory/ therefore
+  resolved to the CPT archive template (not the user's page), bypassing the
+  shortcode and leaving all XEN CSS/JS unenqueued.
+  Fixes applied:
+  1. Disabled the built-in CPT archive (`has_archive => false`). The plugin
+     uses the [xen_inventory_display] shortcode for frontend display; a
+     separate archive URL was never needed and only caused conflicts.
+  2. A one-time rewrite-rules flush is now scheduled automatically on the
+     first admin page load after upgrade, so the conflict is resolved without
+     requiring the user to manually re-save Permalinks.
+  3. The asset-enqueue guard now resolves the queried object with
+     `get_queried_object()` (more reliable than `global $post`) so shortcode
+     CSS/JS load correctly even when the main query context is ambiguous.
+
+------------------------------------------------------------------------------
 = 1.5.1 — 2026-05-28 =
 ------------------------------------------------------------------------------
 

@@ -4,7 +4,7 @@ Tags:               inventory, management, borrow, tracking, departments
 Requires at least:  6.0
 Tested up to:       6.7
 Requires PHP:       8.0
-Stable tag:         1.5.1
+Stable tag:         1.5.2
 License:            GPLv2 or later
 License URI:        https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,11 @@ entries remain untouched. Data is only removed when you **delete** the plugin
 and confirm the uninstall action.
 
 == Changelog ==
+
+= 1.5.2 — 2026-05-28 =
+* Fix: Show full item photo without cropping.
+* Fix: /inventory/ page slug no longer conflicts with CPT archive.
+* See CHANGELOG.txt for full details.
 
 = 1.5.1 — 2026-05-28 =
 * New: WooCommerce-style single item detail page.
