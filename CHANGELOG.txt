@@ -5,6 +5,93 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.5.7 — 2026-05-28 =
+------------------------------------------------------------------------------
+
+== Added ==
+
+* [Frontend — My Active Borrows] Partial return support. When a borrower
+  has more than one unit of an item, a "Qty returning" number input now
+  appears on the return row. Returning fewer than the borrowed amount
+  reduces the outstanding quantity in-place (the row updates without a
+  page reload) and logs a separate 'returned' entry for the returned
+  portion. Notes field available on every return regardless of quantity.
+
+* [Admin — Borrow History Meta Box] "Return" button now prompts for
+  quantity when qty > 1 (browser prompt). A partial return reduces the
+  log row's outstanding quantity and inserts a new 'returned' row for
+  the returned portion.
+
+* [Model] InventoryLog::partial_return() — new static method that handles
+  both full returns (delegates to close_log) and partial returns (reduces
+  original row qty + inserts returned sub-row).
+
+== Changed ==
+
+* [AJAX — xen_return_item] Accepts a new optional 'qty_returned' field.
+  When 0 or absent the entire log row is closed (previous behaviour).
+  When a positive integer is supplied the partial_return model method is
+  called instead.
+
+== Fixed ==
+
+* [Admin — Borrow Log] "Returned" status filter showed all records instead
+  of only returned entries. Root cause: the WHERE clause added a literal
+  SQL condition ('l.date_returned IS NOT NULL') with no sprintf placeholders,
+  leaving $where_args empty. The if($where_args) guard fell through to the
+  unfiltered else branch. Fixed by adding a separate elseif ($where_sql)
+  branch that executes the query with the WHERE clause but without prepare
+  args.
+
+* [Frontend — Login Shortcode] Pages containing [xen_inventory_login] now
+  immediately redirect already-logged-in users to /inventory/ via a
+  template_redirect hook (HTTP 302), rather than rendering a static
+  "You are already logged in" paragraph. The /inventory/login/ clean-URL
+  route already behaved correctly; this fix brings the shortcode page into
+  parity.
+
+------------------------------------------------------------------------------
+= 1.5.6 — 2026-05-30 =
+------------------------------------------------------------------------------
+
+== Added ==
+
+* [Calendar] Double-click any event to open an Edit Borrow Record modal
+  (staff/admin only). Allows editing the due date, notes, and marking the
+  item as returned — without leaving the calendar page. Changes are saved via
+  AJAX (xen_update_borrow) and the calendar refreshes automatically.
+
+* [Borrow History Meta-Box] "Edit" button on every log row. Opens an inline
+  edit form beneath the row to update due date, return date, and notes.
+  Row cells update in-place on save; no page reload required.
+
+* [Frontend — Borrowed Filter] When the "borrowed" status filter is active,
+  item cards now show a borrower list beneath the stock indicator, including
+  borrower name, contact, quantity borrowed, and due date.
+
+* [Dashboard] Company credits bar — displays the Xenroth Digital Innovations
+  logo, developer name (Richard C. Cupal, LPT), and a link to xenroth.com.
+
+== Changed ==
+
+* [Frontend — Borrowed Filter] Filter logic rewritten to query the borrow-log
+  table for active (unreturned) records instead of relying on the
+  _xen_item_status post-meta flag. Items with partial stock borrowed are now
+  correctly included in results.
+
+== Removed ==
+
+* [Settings] GitHub personal access token field removed — the auto-updater
+  never read it, so it was dead UI. The Advanced section now only contains
+  the "Delete data on uninstall" toggle.
+
+== Fixed ==
+
+* [Dashboard] Removed duplicate raw-PHP block (lines 283–418) that was being
+  emitted as literal text into the browser HTML — a corruption introduced
+  during the v1.5.5 authoring session.
+
+------------------------------------------------------------------------------
 = 1.5.5 — 2026-05-29 =
 ------------------------------------------------------------------------------
 

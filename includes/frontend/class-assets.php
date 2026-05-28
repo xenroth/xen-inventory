@@ -102,10 +102,12 @@ class Assets {
             $fc_locale = str_replace( '_', '-', get_locale() );
 
             wp_localize_script( 'xen-inventory-calendar', 'xenCalendar', [
-                'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
-                'nonce'    => wp_create_nonce( 'xen_calendar_nonce' ),
-                'locale'   => $fc_locale,
-                'firstDay' => (int) get_option( 'start_of_week' ),
+                'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+                'nonce'        => wp_create_nonce( 'xen_calendar_nonce' ),
+                'updateNonce'  => wp_create_nonce( 'xen_update_borrow' ),
+                'canEdit'      => current_user_can( 'xen_return_items' ) ? 1 : 0,
+                'locale'       => $fc_locale,
+                'firstDay'     => (int) get_option( 'start_of_week' ),
             ] );
         }
 
@@ -129,14 +131,18 @@ class Assets {
                 'returnNonce' => wp_create_nonce( 'xen_return_nonce' ),
                 'itemsNonce'  => wp_create_nonce( 'xen_items_nonce' ),
                 'i18n'        => [
-                    'borrowTitle'   => __( 'Borrow: %s',                           'xen-inventory' ),
-                    'confirmBorrow' => __( 'Confirm Borrow',                       'xen-inventory' ),
-                    'borrowSuccess' => __( 'Item borrowed successfully!',           'xen-inventory' ),
-                    'returnSuccess' => __( 'Item returned successfully!',           'xen-inventory' ),
-                    'errorGeneric'  => __( 'An error occurred. Please try again.', 'xen-inventory' ),
-                    'confirm'       => __( 'Are you sure?',                        'xen-inventory' ),
-                    'saving'        => __( 'Saving…',                              'xen-inventory' ),
-                    'available'     => __( 'Available',                            'xen-inventory' ),
+                    'borrowTitle'         => __( 'Borrow: %s',                                           'xen-inventory' ),
+                    'confirmBorrow'       => __( 'Confirm Borrow',                                       'xen-inventory' ),
+                    'borrowSuccess'       => __( 'Item borrowed successfully!',                           'xen-inventory' ),
+                    'returnSuccess'       => __( 'Item returned successfully!',                           'xen-inventory' ),
+                    'errorGeneric'        => __( 'An error occurred. Please try again.',                  'xen-inventory' ),
+                    'confirm'             => __( 'Are you sure?',                                        'xen-inventory' ),
+                    'saving'              => __( 'Saving…',                                              'xen-inventory' ),
+                    'available'           => __( 'Available',                                            'xen-inventory' ),
+                    /* translators: %d: partial quantity being returned */
+                    'confirmPartialReturn' => __( 'Return %d item(s)? The rest will remain as borrowed.', 'xen-inventory' ),
+                    /* translators: %d: remaining borrowed quantity */
+                    'qtyBorrowed'         => __( 'Qty borrowed: %d',                                     'xen-inventory' ),
                 ],
             ] );
         }

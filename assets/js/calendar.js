@@ -154,6 +154,96 @@
         }
 
         // ------------------------------------------------------------------
+        // Helper: edit borrow modal (double-click on calendar event)
+        // Only rendered / wired if the current user has edit capability.
+        // ------------------------------------------------------------------
+
+        var editModal        = document.getElementById( 'xen-edit-borrow-modal' );
+        var editLogId        = document.getElementById( 'xen-edit-log-id' );
+        var editItemName     = document.getElementById( 'xen-edit-item-name' );
+        var editBorrower     = document.getElementById( 'xen-edit-borrower' );
+        var editDateDue      = document.getElementById( 'xen-edit-date-due' );
+        var editDateReturned = document.getElementById( 'xen-edit-date-returned' );
+        var editNotes        = document.getElementById( 'xen-edit-notes' );
+        var editStatus       = document.getElementById( 'xen-edit-modal-status' );
+        var editForm         = document.getElementById( 'xen-edit-borrow-form' );
+        var editModalClose   = document.getElementById( 'xen-edit-modal-close' );
+        var editCancelBtn    = document.getElementById( 'xen-edit-cancel-btn' );
+        var editModalBackdrop = editModal ? editModal.querySelector( '.xen-edit-modal__backdrop' ) : null;
+
+        function openEditModal( event ) {
+            if ( ! editModal ) return;
+            var props = event.extendedProps || {};
+
+            editLogId.value        = event.id || props.log_id || '';
+            editItemName.textContent = props.item_title || event.title || '';
+            editBorrower.textContent = props.borrower   || '';
+            editDateDue.value        = props.date_due      ? props.date_due.split( 'T' )[ 0 ]      : '';
+            editDateReturned.value   = props.date_returned ? props.date_returned.split( 'T' )[ 0 ] : '';
+            editNotes.value          = props.notes || '';
+            editStatus.textContent   = '';
+            editStatus.className     = 'xen-edit-modal__status';
+
+            hidePopover();
+            hideDayModal();
+            editModal.removeAttribute( 'hidden' );
+            if ( editModalClose ) editModalClose.focus();
+        }
+
+        function closeEditModal() {
+            if ( editModal ) editModal.setAttribute( 'hidden', '' );
+        }
+
+        if ( editModalClose ) editModalClose.addEventListener( 'click', closeEditModal );
+        if ( editCancelBtn )  editCancelBtn.addEventListener(  'click', closeEditModal );
+        if ( editModalBackdrop ) editModalBackdrop.addEventListener( 'click', closeEditModal );
+
+        document.addEventListener( 'keydown', function ( e ) {
+            if ( 'Escape' === e.key ) closeEditModal();
+        } );
+
+        if ( editForm && parseInt( xenCalendar.canEdit, 10 ) ) {
+            editForm.addEventListener( 'submit', function ( e ) {
+                e.preventDefault();
+
+                var saveBtn = document.getElementById( 'xen-edit-save-btn' );
+                if ( saveBtn ) saveBtn.disabled = true;
+                editStatus.textContent = '';
+
+                var body = new URLSearchParams( {
+                    action:         'xen_update_borrow',
+                    nonce:          xenCalendar.updateNonce,
+                    log_id:         editLogId.value,
+                    notes:          editNotes.value,
+                    date_due:       editDateDue.value,
+                    date_returned:  editDateReturned.value,
+                } );
+
+                fetch( xenCalendar.ajaxUrl, { method: 'POST', body: body } )
+                    .then( function ( res ) { return res.json(); } )
+                    .then( function ( data ) {
+                        if ( data.success ) {
+                            editStatus.textContent = data.data && data.data.message ? data.data.message : 'Saved.';
+                            editStatus.className   = 'xen-edit-modal__status xen-edit-modal__status--ok';
+                            calendar.refetchEvents();
+                            setTimeout( closeEditModal, 900 );
+                        } else {
+                            var msg = data.data && data.data.message ? data.data.message : 'Could not save.';
+                            editStatus.textContent = msg;
+                            editStatus.className   = 'xen-edit-modal__status xen-edit-modal__status--error';
+                        }
+                    } )
+                    .catch( function () {
+                        editStatus.textContent = 'Network error. Please try again.';
+                        editStatus.className   = 'xen-edit-modal__status xen-edit-modal__status--error';
+                    } )
+                    .finally( function () {
+                        if ( saveBtn ) saveBtn.disabled = false;
+                    } );
+            } );
+        }
+
+        // ------------------------------------------------------------------
         // Initialise FullCalendar
         // ------------------------------------------------------------------
 
@@ -193,6 +283,26 @@
             },
             eventClick: function ( info ) {
                 info.jsEvent.preventDefault();
+
+                // Double-click detection: two clicks on the same event within 400 ms.
+                var now      = Date.now();
+                var clickedId = info.event.id;
+
+                if (
+                    parseInt( xenCalendar.canEdit, 10 ) &&
+                    window._xenLastClickId  === clickedId &&
+                    now - ( window._xenLastClickTs || 0 ) < 400
+                ) {
+                    // Second click — treat as double-click → open edit modal.
+                    window._xenLastClickId = null;
+                    window._xenLastClickTs = 0;
+                    openEditModal( info.event );
+                    return;
+                }
+
+                window._xenLastClickId = clickedId;
+                window._xenLastClickTs = now;
+
                 hideDayModal(); // close day modal if open
                 showPopover( info );
             },

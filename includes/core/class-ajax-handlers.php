@@ -28,6 +28,9 @@ class AjaxHandlers {
         // Return an item (logged-in users only).
         add_action( 'wp_ajax_xen_return_item',  [ $this, 'return_item' ] );
 
+        // Update a borrow log entry (staff/admin — edit due date, notes, or mark returned).
+        add_action( 'wp_ajax_xen_update_borrow', [ $this, 'update_borrow' ] );
+
         // Delete a log entry (admin only).
         add_action( 'wp_ajax_xen_delete_log',   [ $this, 'delete_log'  ] );
 
@@ -148,9 +151,10 @@ class AjaxHandlers {
      * Handle return-item AJAX request.
      *
      * Expected POST fields:
-     *   nonce   — xen_return_nonce
-     *   log_id  — int  (the log row to close)
-     *   notes   — string (optional)
+     *   nonce        — xen_return_nonce
+     *   log_id       — int  (the log row to close)
+     *   qty_returned — int  (units being returned; 0 / absent = return all)
+     *   notes        — string (optional)
      *
      * @return void
      */
@@ -161,19 +165,85 @@ class AjaxHandlers {
             wp_send_json_error( [ 'message' => __( 'Permission denied.', 'xen-inventory' ) ], 403 );
         }
 
-        $log_id = absint( $_POST['log_id'] ?? 0 );
-        $notes  = sanitize_textarea_field( $_POST['notes'] ?? '' );
+        $log_id       = absint( $_POST['log_id']       ?? 0 );
+        $qty_returned = absint( $_POST['qty_returned']  ?? 0 );
+        $notes        = sanitize_textarea_field( $_POST['notes'] ?? '' );
 
         if ( ! $log_id ) {
             wp_send_json_error( [ 'message' => __( 'Invalid log entry.', 'xen-inventory' ) ], 400 );
         }
 
-        $updated = \XenInventory\Models\InventoryLog::close_log( $log_id, $notes );
+        // qty_returned = 0 means "return all" — delegate to close_log which
+        // handles full returns and the item-status update.
+        if ( 0 === $qty_returned ) {
+            $ok = \XenInventory\Models\InventoryLog::close_log( $log_id, $notes );
+        } else {
+            $ok = \XenInventory\Models\InventoryLog::partial_return( $log_id, $qty_returned, $notes );
+        }
 
-        if ( $updated ) {
+        if ( $ok ) {
             wp_send_json_success( [ 'message' => __( 'Item returned successfully.', 'xen-inventory' ) ] );
         } else {
             wp_send_json_error( [ 'message' => __( 'Could not update the log entry.', 'xen-inventory' ) ], 500 );
+        }
+    }
+
+    /**
+     * Update a borrow log entry — edit notes, due date, or mark as returned.
+     *
+     * Accepts (POST): log_id, nonce, and optionally notes, date_due, date_returned.
+     * Requires: xen_return_items capability.
+     *
+     * @return void  Sends JSON response.
+     */
+    public function update_borrow(): void {
+        check_ajax_referer( 'xen_update_borrow', 'nonce' );
+
+        if ( ! current_user_can( 'xen_return_items' ) ) {
+            wp_send_json_error( [ 'message' => __( 'Permission denied.', 'xen-inventory' ) ], 403 );
+        }
+
+        $log_id = isset( $_POST['log_id'] ) ? absint( wp_unslash( $_POST['log_id'] ) ) : 0;
+        if ( ! $log_id ) {
+            wp_send_json_error( [ 'message' => __( 'Invalid log ID.', 'xen-inventory' ) ], 400 );
+        }
+
+        $data = [];
+
+        if ( isset( $_POST['notes'] ) ) {
+            $data['notes'] = sanitize_textarea_field( wp_unslash( $_POST['notes'] ) );
+        }
+
+        if ( ! empty( $_POST['date_due'] ) ) {
+            $date_due = sanitize_text_field( wp_unslash( $_POST['date_due'] ) );
+            // Validate format YYYY-MM-DD.
+            if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_due ) ) {
+                $data['date_due'] = $date_due;
+            }
+        }
+
+        if ( ! empty( $_POST['date_returned'] ) ) {
+            $date_returned = sanitize_text_field( wp_unslash( $_POST['date_returned'] ) );
+            if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_returned ) ) {
+                $data['date_returned'] = $date_returned;
+                $data['action']        = 'returned';
+            }
+        } elseif ( isset( $_POST['date_returned'] ) && '' === $_POST['date_returned'] ) {
+            // Explicitly clearing the return date — re-open the record.
+            $data['date_returned'] = null;
+            $data['action']        = 'borrowed';
+        }
+
+        if ( empty( $data ) ) {
+            wp_send_json_error( [ 'message' => __( 'No changes submitted.', 'xen-inventory' ) ], 400 );
+        }
+
+        $ok = \XenInventory\Models\InventoryLog::update_log( $log_id, $data );
+
+        if ( $ok ) {
+            wp_send_json_success( [ 'message' => __( 'Record updated.', 'xen-inventory' ) ] );
+        } else {
+            wp_send_json_error( [ 'message' => __( 'Could not update the record.', 'xen-inventory' ) ], 500 );
         }
     }
 

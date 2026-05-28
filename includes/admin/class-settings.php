@@ -134,18 +134,6 @@ class Settings {
         );
 
         add_settings_field(
-            'github_token',
-            __( 'GitHub Token (optional)', 'xen-inventory' ),
-            [ $this, 'field_password' ],
-            'xen-inventory-settings',
-            'xen_advanced',
-            [
-                'key'   => 'github_token',
-                'label' => __( 'Personal Access Token for higher GitHub API rate limits. Leave blank for public-repo access.', 'xen-inventory' ),
-            ]
-        );
-
-        add_settings_field(
             'delete_data_on_uninstall',
             __( 'Delete Data on Uninstall', 'xen-inventory' ),
             [ $this, 'field_delete_on_uninstall' ],
@@ -207,28 +195,6 @@ class Settings {
             );
         }
         echo '</select>';
-
-        if ( ! empty( $args['label'] ) ) {
-            echo '<p class="description">' . esc_html( $args['label'] ) . '</p>';
-        }
-    }
-
-    /**
-     * Render a password input field (for tokens/secrets).
-     *
-     * @param  array<string, mixed> $args Field arguments.
-     * @return void
-     */
-    public function field_password( array $args ): void {
-        $options = get_option( self::OPTION_KEY, [] );
-        $value   = $options[ $args['key'] ] ?? '';
-
-        printf(
-            '<input type="password" autocomplete="new-password" name="%s[%s]" value="%s" class="regular-text" />',
-            esc_attr( self::OPTION_KEY ),
-            esc_attr( $args['key'] ),
-            esc_attr( $value )
-        );
 
         if ( ! empty( $args['label'] ) ) {
             echo '<p class="description">' . esc_html( $args['label'] ) . '</p>';
@@ -322,9 +288,6 @@ class Settings {
         $clean['calendar_size']      = in_array( $input['calendar_size'] ?? '', $allowed_sizes, true )
             ? $input['calendar_size']
             : 'normal';
-
-        // GitHub token — sanitize as plain text (not a URL, not HTML).
-        $clean['github_token'] = sanitize_text_field( $input['github_token'] ?? '' );
 
         return $clean;
     }

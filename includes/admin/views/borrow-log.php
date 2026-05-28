@@ -74,6 +74,14 @@ if ( $where_args ) {
         array_merge( $where_args, [ $per_page, $offset ] )
     ) );
     $total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) {$base_query}", $where_args ) );
+} elseif ( $where_sql ) {
+    // WHERE clause has no placeholder args (e.g. status=returned adds a
+    // literal condition). Append LIMIT/OFFSET via prepare separately.
+    $logs  = $wpdb->get_results( $wpdb->prepare(
+        "SELECT l.*, p.post_title AS item_title {$base_query} ORDER BY l.date_borrowed DESC LIMIT %d OFFSET %d",
+        $per_page, $offset
+    ) );
+    $total = (int) $wpdb->get_var( "SELECT COUNT(*) {$base_query}" );
 } else {
     $logs  = $wpdb->get_results( $wpdb->prepare(
         "SELECT l.*, p.post_title AS item_title {$base_query} ORDER BY l.date_borrowed DESC LIMIT %d OFFSET %d",

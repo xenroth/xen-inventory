@@ -133,6 +133,37 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                             <?php endif; ?>
                         </div>
 
+                        <?php
+                        // When the 'borrowed' filter is active, show who currently has this item.
+                        $item_borrows = $active_borrowers[ get_the_ID() ] ?? [];
+                        if ( $current_status === 'borrowed' && ! empty( $item_borrows ) ) :
+                        ?>
+                            <div class="xen-item-card__borrowers">
+                                <p class="xen-item-card__borrowers-label"><?php esc_html_e( 'Currently borrowed by:', 'xen-inventory' ); ?></p>
+                                <ul class="xen-item-card__borrower-list">
+                                    <?php foreach ( $item_borrows as $borrow ) : ?>
+                                        <li class="xen-item-card__borrower-row">
+                                            <span class="xen-item-card__borrower-name">
+                                                <?php echo esc_html( $borrow->borrower_full_name ?: $borrow->borrower_name ); ?>
+                                            </span>
+                                            <?php if ( $borrow->borrower_contact ) : ?>
+                                                <span class="xen-item-card__borrower-contact">
+                                                    <?php echo esc_html( $borrow->borrower_contact ); ?>
+                                                </span>
+                                            <?php endif; ?>
+                                            <span class="xen-item-card__borrower-meta">
+                                                ×<?php echo (int) $borrow->quantity; ?>
+                                                <?php if ( $borrow->date_due ) : ?>
+                                                    · <?php esc_html_e( 'due', 'xen-inventory' ); ?>
+                                                    <?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $borrow->date_due ) ) ); ?>
+                                                <?php endif; ?>
+                                            </span>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        <?php endif; ?>
+
                         <?php if ( $available_qty > 0 && current_user_can( 'xen_borrow_items' ) ) : ?>
                             <button
                                 class="xen-btn xen-btn--primary xen-borrow-btn xen-item-card__cta"
@@ -272,7 +303,7 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                     <span class="xen-return-row__qty">
                         <?php
                         /* translators: %d: quantity borrowed */
-                        printf( esc_html__( 'Qty: %d', 'xen-inventory' ), (int) $borrow->quantity );
+                        printf( esc_html__( 'Qty borrowed: %d', 'xen-inventory' ), (int) $borrow->quantity );
                         ?>
                     </span>
                 </div>
@@ -293,6 +324,21 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                     <?php endif; ?>
                 </div>
                 <div class="xen-return-row__actions">
+                    <?php if ( (int) $borrow->quantity > 1 ) : ?>
+                        <label class="xen-return-qty-label">
+                            <?php esc_html_e( 'Qty returning:', 'xen-inventory' ); ?>
+                            <input
+                                type="number"
+                                class="xen-return-qty"
+                                min="1"
+                                max="<?php echo (int) $borrow->quantity; ?>"
+                                value="<?php echo (int) $borrow->quantity; ?>"
+                                style="width:4.5rem;"
+                            />
+                        </label>
+                    <?php else : ?>
+                        <input type="hidden" class="xen-return-qty" value="1" />
+                    <?php endif; ?>
                     <input
                         type="text"
                         class="xen-return-notes"
@@ -301,6 +347,7 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                     <button
                         class="xen-btn xen-btn--secondary xen-return-btn"
                         data-log-id="<?php echo (int) $borrow->id; ?>"
+                        data-qty="<?php echo (int) $borrow->quantity; ?>"
                     ><?php esc_html_e( 'Return', 'xen-inventory' ); ?></button>
                 </div>
             </div>

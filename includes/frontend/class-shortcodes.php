@@ -30,6 +30,9 @@ class Shortcodes {
         add_shortcode( 'xen_inventory_display',  [ $this, 'render_inventory_display'  ] );
         add_shortcode( 'xen_inventory_calendar', [ $this, 'render_inventory_calendar' ] );
         add_shortcode( 'xen_inventory_login',    [ $this, 'render_login_form'         ] );
+
+        // Redirect logged-in users away from pages containing [xen_inventory_login].
+        add_action( 'template_redirect', [ $this, 'redirect_logged_in_from_login_page' ] );
     }
 
     // -----------------------------------------------------------------------
@@ -113,15 +116,55 @@ class Shortcodes {
         }
 
         if ( $atts['status'] ) {
-            $query_args['meta_query'] = [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-                [
-                    'key'   => '_xen_item_status',
-                    'value' => $atts['status'],
-                ],
-            ];
+            if ( 'borrowed' === $atts['status'] ) {
+                // 'borrowed' means any item that has at least one active (unreturned)
+                // borrow record — not just items whose status meta = 'borrowed' (which
+                // only happens when ALL stock is out).  Query the log table directly
+                // so partial-stock borrows are included.
+                global $wpdb;
+                $table    = $wpdb->prefix . XEN_INVENTORY_LOG_TABLE;
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+                $item_ids = $wpdb->get_col(
+                    "SELECT DISTINCT item_id FROM {$table}
+                     WHERE action = 'borrowed' AND date_returned IS NULL"
+                );
+                if ( empty( $item_ids ) ) {
+                    // No active borrows — return empty query.
+                    $query_args['post__in'] = [ 0 ];
+                } else {
+                    $query_args['post__in'] = array_map( 'intval', $item_ids );
+                    $query_args['orderby']  = 'post__in'; // preserve meaningful sort fallback
+                    $query_args['orderby']  = 'title';
+                }
+            } else {
+                $query_args['meta_query'] = [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+                    [
+                        'key'   => '_xen_item_status',
+                        'value' => $atts['status'],
+                    ],
+                ];
+            }
         }
 
         $items_query = new \WP_Query( $query_args );
+
+        // When filtering by 'borrowed', build a map of item_id → active borrow rows
+        // so the view can display who currently has each item.
+        $active_borrowers = [];
+        if ( 'borrowed' === $atts['status'] || 'borrowed' === ( $_GET['xen_status'] ?? '' ) ) {
+            global $wpdb;
+            $table            = $wpdb->prefix . XEN_INVENTORY_LOG_TABLE;
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $active_rows      = $wpdb->get_results(
+                "SELECT item_id, borrower_full_name, borrower_name, borrower_contact, quantity, date_borrowed, date_due
+                 FROM {$table}
+                 WHERE action = 'borrowed' AND date_returned IS NULL
+                 ORDER BY date_borrowed ASC"
+            );
+            foreach ( $active_rows as $row ) {
+                $active_borrowers[ (int) $row->item_id ][] = $row;
+            }
+        }
 
         // Get departments for filter dropdown.
         $departments = get_terms( [
@@ -166,6 +209,30 @@ class Shortcodes {
     // -----------------------------------------------------------------------
     // [xen_inventory_login]
     // -----------------------------------------------------------------------
+
+    /**
+     * Redirect logged-in users away from any page that contains the
+     * [xen_inventory_login] shortcode, before the template is rendered.
+     *
+     * Fires on template_redirect so headers have not been sent yet.
+     *
+     * @return void
+     */
+    public function redirect_logged_in_from_login_page(): void {
+        if ( ! is_user_logged_in() ) {
+            return;
+        }
+
+        $post = get_queried_object();
+        if ( ! ( $post instanceof \WP_Post ) ) {
+            return;
+        }
+
+        if ( has_shortcode( $post->post_content, 'xen_inventory_login' ) ) {
+            wp_safe_redirect( home_url( '/inventory/' ), 302 );
+            exit;
+        }
+    }
 
     /**
      * Render a frontend login form.

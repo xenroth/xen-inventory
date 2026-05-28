@@ -67,11 +67,22 @@ if ( ! defined( 'ABSPATH' ) ) {
                             data-log-id="<?php echo (int) $log->id; ?>"
                             aria-label="<?php esc_attr_e( 'Delete log entry', 'xen-inventory' ); ?>"
                         ><?php esc_html_e( 'Delete', 'xen-inventory' ); ?></button>
+                        <button
+                            type="button"
+                            class="button button-small xen-edit-log"
+                            data-log-id="<?php echo (int) $log->id; ?>"
+                            data-date-due="<?php echo esc_attr( $log->date_due ?? '' ); ?>"
+                            data-date-returned="<?php echo esc_attr( $log->date_returned ?? '' ); ?>"
+                            data-notes="<?php echo esc_attr( $log->notes ?? '' ); ?>"
+                            aria-label="<?php esc_attr_e( 'Edit log entry', 'xen-inventory' ); ?>"
+                            style="margin-top:2px;"
+                        ><?php esc_html_e( 'Edit', 'xen-inventory' ); ?></button>
                         <?php if ( ! $log->date_returned ) : ?>
                             <button
                                 type="button"
                                 class="button button-small button-primary xen-return-log"
                                 data-log-id="<?php echo (int) $log->id; ?>"
+                                data-qty="<?php echo (int) $log->quantity; ?>"
                                 aria-label="<?php esc_attr_e( 'Mark as returned', 'xen-inventory' ); ?>"
                                 style="margin-top:2px;"
                             ><?php esc_html_e( 'Return', 'xen-inventory' ); ?></button>

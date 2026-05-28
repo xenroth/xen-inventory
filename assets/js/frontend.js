@@ -123,36 +123,61 @@
     // -----------------------------------------------------------------------
 
     $( document ).on( 'click', '.xen-return-btn', function () {
-        if ( ! window.confirm( xenInventory.i18n.confirm ) ) {
-            return;
-        }
+        const $btn      = $( this );
+        const logId     = $btn.data( 'log-id' );
+        const $row      = $btn.closest( '.xen-return-row' );
+        const $notes    = $row.find( '.xen-return-notes' );
+        const $qtyInput = $row.find( '.xen-return-qty' );
+        const totalQty  = parseInt( $btn.data( 'qty' ) || 1, 10 );
+        const qtyReturn = parseInt( $qtyInput.val() || totalQty, 10 );
+        const isPartial = qtyReturn > 0 && qtyReturn < totalQty;
 
-        const $btn   = $( this );
-        const logId  = $btn.data( 'log-id' );
-        const $row   = $btn.closest( '.xen-return-row' );
-        const $notes = $row.find( '.xen-return-notes' );
+        if ( isPartial ) {
+            var partialMsg = ( xenInventory.i18n.confirmPartialReturn || 'Return %d item(s)? The rest will remain as borrowed.' )
+                .replace( '%d', qtyReturn );
+            if ( ! window.confirm( partialMsg ) ) {
+                return;
+            }
+        } else {
+            if ( ! window.confirm( xenInventory.i18n.confirm ) ) {
+                return;
+            }
+        }
 
         $btn.prop( 'disabled', true );
 
         $.post( xenInventory.ajaxUrl, {
-            action:  'xen_return_item',
-            nonce:   xenInventory.returnNonce,
-            log_id:  logId,
-            notes:   $notes.val ? $notes.val() : '',
+            action:       'xen_return_item',
+            nonce:        xenInventory.returnNonce,
+            log_id:       logId,
+            qty_returned: qtyReturn,
+            notes:        $notes.val ? $notes.val() : '',
         } )
             .done( function ( response ) {
                 if ( response.success ) {
-                    // Remove the row from "My Active Borrows".
-                    $row.fadeOut( 300, function () { $( this ).remove(); } );
+                    if ( isPartial ) {
+                        // Update the displayed quantity and re-enable the button.
+                        const remaining = totalQty - qtyReturn;
+                        $btn.data( 'qty', remaining );
+                        $qtyInput.attr( 'max', remaining ).val( remaining );
+                        $row.find( '.xen-return-row__qty' ).text(
+                            xenInventory.i18n.qtyBorrowed
+                                ? xenInventory.i18n.qtyBorrowed.replace( '%d', remaining )
+                                : ( 'Qty borrowed: ' + remaining )
+                        );
+                        $notes.val( '' );
+                        $btn.prop( 'disabled', false );
+                    } else {
+                        // Full return — remove the row.
+                        $row.fadeOut( 300, function () { $( this ).remove(); } );
 
-                    // If the return button was also inside an item card (future use),
-                    // update the status badge too.
-                    const $card = $btn.closest( '.xen-item-card' );
-                    if ( $card.length ) {
-                        $card.find( '.xen-status-badge' )
-                            .removeClass( 'xen-status-badge--borrowed' )
-                            .addClass( 'xen-status-badge--available' )
-                            .text( xenInventory.i18n.available || 'Available' );
+                        const $card = $btn.closest( '.xen-item-card' );
+                        if ( $card.length ) {
+                            $card.find( '.xen-status-badge' )
+                                .removeClass( 'xen-status-badge--borrowed' )
+                                .addClass( 'xen-status-badge--available' )
+                                .text( xenInventory.i18n.available || 'Available' );
+                        }
                     }
                 } else {
                     alert( response.data.message || xenInventory.i18n.errorGeneric );

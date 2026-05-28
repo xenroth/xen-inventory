@@ -107,6 +107,135 @@ class InventoryLog {
         return (bool) $rows;
     }
 
+    /**
+     * Return a specific quantity from an open borrow log row.
+     *
+     * - Full return  (qty_returned == row quantity): delegates to close_log().
+     * - Partial return (qty_returned < row quantity):
+     *     1. Reduces the original row's quantity by qty_returned.
+     *     2. Inserts a new 'returned' row recording what was handed back.
+     *
+     * @param  int    $log_id       Primary key of the open borrow row.
+     * @param  int    $qty_returned How many units are being returned (≥ 1).
+     * @param  string $notes        Optional return note.
+     * @return bool   True on success, false on DB error or invalid input.
+     */
+    public static function partial_return( int $log_id, int $qty_returned, string $notes = '' ): bool {
+        global $wpdb;
+
+        if ( $qty_returned < 1 ) {
+            return false;
+        }
+
+        // Fetch the original open log row.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $log = $wpdb->get_row(
+            $wpdb->prepare(
+                'SELECT * FROM ' . self::table() . ' WHERE id = %d AND date_returned IS NULL',
+                $log_id
+            )
+        );
+
+        if ( ! $log ) {
+            return false;
+        }
+
+        $original_qty = (int) $log->quantity;
+
+        // Cap at original quantity — can't return more than was borrowed.
+        if ( $qty_returned >= $original_qty ) {
+            return self::close_log( $log_id, $notes );
+        }
+
+        // Reduce the outstanding quantity on the original row.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $reduced = $wpdb->update(
+            self::table(),
+            [ 'quantity' => $original_qty - $qty_returned ],
+            [ 'id' => $log_id ],
+            [ '%d' ],
+            [ '%d' ]
+        );
+
+        if ( false === $reduced ) {
+            return false;
+        }
+
+        // Insert a 'returned' log row for the returned portion.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+        $wpdb->insert(
+            self::table(),
+            [
+                'item_id'            => (int) $log->item_id,
+                'user_id'            => (int) $log->user_id,
+                'borrower_name'      => $log->borrower_name,
+                'borrower_full_name' => $log->borrower_full_name,
+                'borrower_contact'   => $log->borrower_contact,
+                'borrow_tags'        => $log->borrow_tags,
+                'action'             => 'returned',
+                'quantity'           => $qty_returned,
+                'date_borrowed'      => $log->date_borrowed,
+                'date_due'           => $log->date_due,
+                'date_returned'      => current_time( 'mysql', true ),
+                'notes'              => $notes,
+            ],
+            [ '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s' ]
+        );
+
+        // Restore item status to 'available' if any units are now free.
+        $available = self::get_available_quantity( (int) $log->item_id );
+        if ( $available > 0 ) {
+            update_post_meta( (int) $log->item_id, '_xen_item_status', 'available' );
+        }
+
+        return true;
+    }
+
+    /**
+     * Update arbitrary fields on a log row.
+     *
+     * Accepts an associative array of column → value pairs. Handles nullable
+     * values by using a direct query so null can be passed for date_returned.
+     *
+     * @param  int   $id   Primary key of the log row.
+     * @param  array $data Column → value pairs to update.
+     * @return bool        True on success (or no-op), false on DB error.
+     */
+    public static function update_log( int $id, array $data ): bool {
+        global $wpdb;
+
+        $allowed = [ 'notes', 'date_due', 'date_returned', 'action' ];
+        $set_parts = [];
+        $values    = [];
+
+        foreach ( $allowed as $col ) {
+            if ( ! array_key_exists( $col, $data ) ) {
+                continue;
+            }
+            if ( null === $data[ $col ] ) {
+                $set_parts[] = "`$col` = NULL";
+            } else {
+                $set_parts[] = "`$col` = %s";
+                $values[]    = $data[ $col ];
+            }
+        }
+
+        if ( empty( $set_parts ) ) {
+            return true; // Nothing to update.
+        }
+
+        $values[] = $id;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+        $result = $wpdb->query(
+            $wpdb->prepare(
+                'UPDATE ' . self::table() . ' SET ' . implode( ', ', $set_parts ) . ' WHERE id = %d',
+                ...$values
+            )
+        );
+
+        return false !== $result;
+    }
+
     // -----------------------------------------------------------------------
     // Read
     // -----------------------------------------------------------------------
@@ -283,12 +412,14 @@ class InventoryLog {
                 'end'   => $event_end,
                 'color' => $color,
                 'extendedProps' => [
+                    'log_id'        => (int) $row->id,
                     'item_id'       => (int) $row->item_id,
                     'item_title'    => $row->item_title,
                     'borrower'      => $row->borrower_full_name ?: $row->borrower_name,
                     'action'        => $row->action,
                     'quantity'      => (int) $row->quantity,
                     'notes'         => $row->notes,
+                    'date_due'      => $row->date_due,
                     'date_returned' => $row->date_returned,
                 ],
             ];
