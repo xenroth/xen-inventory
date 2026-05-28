@@ -89,6 +89,16 @@ class AdminMenu {
             [ $this, 'render_borrow_log' ]
         );
 
+        // Borrowers.
+        add_submenu_page(
+            'xen-inventory',
+            __( 'Borrowers',     'xen-inventory' ),
+            __( 'Borrowers',     'xen-inventory' ),
+            'xen_manage_inventory',
+            'xen-borrowers',
+            [ $this, 'render_borrowers' ]
+        );
+
         // Settings.
         add_submenu_page(
             'xen-inventory',
@@ -127,6 +137,22 @@ class AdminMenu {
         }
 
         $template = XEN_INVENTORY_PATH . 'includes/admin/views/borrow-log.php';
+        if ( file_exists( $template ) ) {
+            include $template;
+        }
+    }
+
+    /**
+     * Render the borrowers admin page.
+     *
+     * @return void
+     */
+    public function render_borrowers(): void {
+        if ( ! current_user_can( 'xen_manage_inventory' ) ) {
+            wp_die( esc_html__( 'You do not have permission to view this page.', 'xen-inventory' ) );
+        }
+
+        $template = XEN_INVENTORY_PATH . 'includes/admin/views/borrowers.php';
         if ( file_exists( $template ) ) {
             include $template;
         }

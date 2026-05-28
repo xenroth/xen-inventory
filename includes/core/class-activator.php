@@ -66,11 +66,13 @@ class Activator {
         $charset_collate = $wpdb->get_charset_collate();
 
         $sql = "CREATE TABLE {$table_name} (
-            id            BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-            item_id       BIGINT(20) UNSIGNED NOT NULL,
-            user_id       BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
-            borrower_name VARCHAR(200)        NOT NULL DEFAULT '',
-            action        VARCHAR(50)         NOT NULL DEFAULT 'borrowed',
+            id                 BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            item_id            BIGINT(20) UNSIGNED NOT NULL,
+            user_id            BIGINT(20) UNSIGNED NOT NULL DEFAULT 0,
+            borrower_name      VARCHAR(200)        NOT NULL DEFAULT '',
+            borrower_full_name VARCHAR(200)        NOT NULL DEFAULT '',
+            borrower_contact   VARCHAR(200)        NOT NULL DEFAULT '',
+            action             VARCHAR(50)         NOT NULL DEFAULT 'borrowed',
             quantity      INT(11) UNSIGNED    NOT NULL DEFAULT 1,
             date_borrowed DATETIME            NOT NULL DEFAULT '0000-00-00 00:00:00',
             date_due      DATETIME                     DEFAULT NULL,
@@ -85,6 +87,24 @@ class Activator {
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta( $sql );
+    }
+
+    /**
+     * Run any pending schema upgrades.
+     *
+     * Called on every plugin init. The `dbDelta` inside `create_log_table()`
+     * is idempotent — it only ALTERs the table when columns are missing — so
+     * the version guard is just an optimisation to skip the check on every
+     * request once the DB is already up-to-date.
+     *
+     * @return void
+     */
+    public static function maybe_upgrade(): void {
+        $stored = get_option( 'xen_inventory_version', '0.0.0' );
+        if ( version_compare( $stored, XEN_INVENTORY_VERSION, '<' ) ) {
+            self::create_log_table(); // dbDelta handles ADD COLUMN automatically.
+            update_option( 'xen_inventory_version', XEN_INVENTORY_VERSION );
+        }
     }
 
     // -----------------------------------------------------------------------

@@ -61,6 +61,7 @@ final class Plugin {
      * @return void
      */
     private function init(): void {
+        Activator::maybe_upgrade();
         $this->load_textdomain();
         $this->register_core();
         $this->register_admin();

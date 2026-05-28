@@ -5,6 +5,41 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.4.0 — 2026-05-28 =
+------------------------------------------------------------------------------
+
+== New Features ==
+
+* Borrower identity fields on the borrow form.
+  - **Full Name / Entity** (required) — the legal name or department of the
+    person borrowing the item. Pre-filled from the borrower’s WP profile
+    (first + last name, or display name).
+  - **Contact** (optional) — a mobile number or Facebook account for follow-up
+    if the item is overdue.
+  - Both fields appear in the inline borrow modal on the inventory grid and
+    on the standalone /inventory/borrow/{id}/ page.
+  - Stored in two new DB columns: `borrower_full_name` and `borrower_contact`.
+    Existing installs are upgraded automatically on next page load via the
+    new `Activator::maybe_upgrade()` routine (uses dbDelta — safe, additive).
+
+* Borrowers admin page (XEN Inventory → Borrowers).
+  - **List view**: aggregated table of every unique borrower showing WP account,
+    full name/entity, contact, total borrows, active borrows, overdue count,
+    returned count, and date of last borrow.
+  - **Detail view** (“View History” link): borrower profile card with all
+    recorded identity details, summary stats, and a full per-item borrow
+    history table with status, dates, quantity, and notes.
+
+== Improvements ==
+
+* Borrow Log (admin) — Borrower column now shows the full name below the WP
+  display name; new Contact column added. Search filter now matches
+  `borrower_full_name` and `borrower_contact` in addition to item title.
+* Borrow History meta box (item edit screen) — Borrower cell updated to show
+  full name and contact below the display name.
+* CSV export — added Full Name and Contact columns.
+
+------------------------------------------------------------------------------
 = 1.3.0 — 2026-05-28 =
 ------------------------------------------------------------------------------
 

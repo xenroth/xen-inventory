@@ -37,8 +37,11 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <td><?php echo (int) $log->id; ?></td>
                     <td>
                         <?php echo esc_html( $log->borrower_name ); ?>
-                        <?php if ( $log->user_id ) : ?>
-                            <br><small><?php echo esc_html( get_userdata( (int) $log->user_id )->user_login ?? '' ); ?></small>
+                        <?php if ( ! empty( $log->borrower_full_name ) ) : ?>
+                            <br><small><?php echo esc_html( $log->borrower_full_name ); ?></small>
+                        <?php endif; ?>
+                        <?php if ( ! empty( $log->borrower_contact ) ) : ?>
+                            <br><small class="xen-text-muted"><?php echo esc_html( $log->borrower_contact ); ?></small>
                         <?php endif; ?>
                     </td>
                     <td>

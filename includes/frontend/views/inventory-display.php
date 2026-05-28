@@ -181,8 +181,39 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
         <div class="xen-modal__overlay" data-xen-close-modal></div>
         <div class="xen-modal__content">
             <h2 class="xen-modal__title" id="xen-modal-title"><?php esc_html_e( 'Borrow Item', 'xen-inventory' ); ?></h2>
-            <form id="xen-borrow-form" class="xen-form">
+            <?php
+            $current_user = wp_get_current_user();
+            $default_fullname = trim( ( $current_user->first_name ?? '' ) . ' ' . ( $current_user->last_name ?? '' ) ) ?: ( $current_user->display_name ?? '' );
+            ?>
+            <form id="xen-borrow-form" class="xen-form" data-user-fullname="<?php echo esc_attr( $default_fullname ); ?>">
                 <input type="hidden" name="item_id" id="xen-borrow-item-id" value="" />
+
+                <div class="xen-form__group">
+                    <label for="xen-borrow-fullname">
+                        <?php esc_html_e( 'Full Name / Entity', 'xen-inventory' ); ?>
+                        <span class="xen-required-star" aria-hidden="true">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="xen-borrow-fullname"
+                        name="borrower_full_name"
+                        required
+                        placeholder="<?php esc_attr_e( 'e.g. Juan dela Cruz or IT Department', 'xen-inventory' ); ?>"
+                    />
+                </div>
+
+                <div class="xen-form__group">
+                    <label for="xen-borrow-contact">
+                        <?php esc_html_e( 'Contact', 'xen-inventory' ); ?>
+                        <span class="xen-form__optional"><?php esc_html_e( '(mobile or Facebook — optional)', 'xen-inventory' ); ?></span>
+                    </label>
+                    <input
+                        type="text"
+                        id="xen-borrow-contact"
+                        name="borrower_contact"
+                        placeholder="<?php esc_attr_e( '+63 912 345 6789 or fb.com/yourname', 'xen-inventory' ); ?>"
+                    />
+                </div>
 
                 <div class="xen-form__group">
                     <label for="xen-borrow-quantity"><?php esc_html_e( 'Quantity', 'xen-inventory' ); ?></label>

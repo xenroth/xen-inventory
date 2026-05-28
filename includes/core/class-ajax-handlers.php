@@ -65,13 +65,19 @@ class AjaxHandlers {
             wp_send_json_error( [ 'message' => __( 'Permission denied.', 'xen-inventory' ) ], 403 );
         }
 
-        $item_id  = absint( $_POST['item_id'] ?? 0 );
-        $quantity = absint( $_POST['quantity'] ?? 1 );
-        $date_due = sanitize_text_field( $_POST['date_due'] ?? '' );
-        $notes    = sanitize_textarea_field( $_POST['notes'] ?? '' );
+        $item_id            = absint( $_POST['item_id'] ?? 0 );
+        $quantity           = absint( $_POST['quantity'] ?? 1 );
+        $date_due           = sanitize_text_field( $_POST['date_due']            ?? '' );
+        $notes              = sanitize_textarea_field( $_POST['notes']           ?? '' );
+        $borrower_full_name = sanitize_text_field( $_POST['borrower_full_name'] ?? '' );
+        $borrower_contact   = sanitize_text_field( $_POST['borrower_contact']   ?? '' );
 
         if ( ! $item_id ) {
             wp_send_json_error( [ 'message' => __( 'Invalid item.', 'xen-inventory' ) ], 400 );
+        }
+
+        if ( '' === $borrower_full_name ) {
+            wp_send_json_error( [ 'message' => __( 'Please enter the full name or entity of the borrower.', 'xen-inventory' ) ], 400 );
         }
 
         // Quantity must be at least 1.
@@ -106,14 +112,16 @@ class AjaxHandlers {
         }
 
         $result = \XenInventory\Models\InventoryLog::create_log( [
-            'item_id'       => $item_id,
-            'user_id'       => get_current_user_id(),
-            'borrower_name' => wp_get_current_user()->display_name,
-            'action'        => 'borrowed',
-            'quantity'      => $quantity,
-            'date_borrowed' => current_time( 'mysql', true ), // UTC.
-            'date_due'      => $date_due ? $date_due . ' 00:00:00' : null,
-            'notes'         => $notes,
+            'item_id'            => $item_id,
+            'user_id'            => get_current_user_id(),
+            'borrower_name'      => wp_get_current_user()->display_name,
+            'borrower_full_name' => $borrower_full_name,
+            'borrower_contact'   => $borrower_contact,
+            'action'             => 'borrowed',
+            'quantity'           => $quantity,
+            'date_borrowed'      => current_time( 'mysql', true ), // UTC.
+            'date_due'           => $date_due ? $date_due . ' 00:00:00' : null,
+            'notes'              => $notes,
         ] );
 
         if ( $result ) {
@@ -197,7 +205,9 @@ class AjaxHandlers {
 
         if ( $filter_search ) {
             $like         = '%' . $wpdb->esc_like( $filter_search ) . '%';
-            $where[]      = '( l.borrower_name LIKE %s OR p.post_title LIKE %s )';
+            $where[]      = '( l.borrower_name LIKE %s OR l.borrower_full_name LIKE %s OR l.borrower_contact LIKE %s OR p.post_title LIKE %s )';
+            $where_args[] = $like;
+            $where_args[] = $like;
             $where_args[] = $like;
             $where_args[] = $like;
         }
@@ -252,6 +262,8 @@ class AjaxHandlers {
             __( 'ID',         'xen-inventory' ),
             __( 'Item',       'xen-inventory' ),
             __( 'Borrower',   'xen-inventory' ),
+            __( 'Full Name',  'xen-inventory' ),
+            __( 'Contact',    'xen-inventory' ),
             __( 'Action',     'xen-inventory' ),
             __( 'Quantity',   'xen-inventory' ),
             __( 'Borrowed',   'xen-inventory' ),
@@ -275,15 +287,17 @@ class AjaxHandlers {
 
             fputcsv( $out, [
                 (int) $log->id,
-                $log->item_title    ?? '',
-                $log->borrower_name ?? '',
+                $log->item_title             ?? '',
+                $log->borrower_name          ?? '',
+                $log->borrower_full_name     ?? '',
+                $log->borrower_contact       ?? '',
                 ucfirst( $log->action ),
                 (int) $log->quantity,
                 wp_date( $date_fmt, strtotime( $log->date_borrowed ) ),
                 $due,
                 $returned,
                 $status,
-                $log->notes ?? '',
+                $log->notes                  ?? '',
             ] );
         }
 

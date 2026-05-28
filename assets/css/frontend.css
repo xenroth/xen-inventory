@@ -394,6 +394,18 @@
     font-size: 0.875rem;
 }
 
+.xen-form__optional {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--xen-color-text-muted);
+    margin-left: 0.25rem;
+}
+
+.xen-required-star {
+    color: #ef4444;
+    margin-left: 0.125rem;
+}
+
 /* --------------------------------------------------------------------------
    Notice
    -------------------------------------------------------------------------- */

@@ -42,20 +42,22 @@ class InventoryLog {
         global $wpdb;
 
         $defaults = [
-            'item_id'       => 0,
-            'user_id'       => 0,
-            'borrower_name' => '',
-            'action'        => 'borrowed',
-            'quantity'      => 1,
-            'date_borrowed' => current_time( 'mysql', true ),
-            'date_due'      => null,
-            'date_returned' => null,
-            'notes'         => '',
+            'item_id'            => 0,
+            'user_id'            => 0,
+            'borrower_name'      => '',
+            'borrower_full_name' => '',
+            'borrower_contact'   => '',
+            'action'             => 'borrowed',
+            'quantity'           => 1,
+            'date_borrowed'      => current_time( 'mysql', true ),
+            'date_due'           => null,
+            'date_returned'      => null,
+            'notes'              => '',
         ];
 
         $data = wp_parse_args( $data, $defaults );
 
-        $formats = [ '%d', '%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s' ];
+        $formats = [ '%d', '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s' ];
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $inserted = $wpdb->insert( self::table(), $data, $formats );
@@ -271,5 +273,70 @@ class InventoryLog {
         }
 
         return $events;
+    }
+
+    /**
+     * Return an aggregated summary of all borrowers.
+     *
+     * Each row represents one WP user account (grouped by user_id + borrower_name).
+     * The borrower_full_name and borrower_contact are pulled from the most recent
+     * log entry for that user (identified via MAX(id) per group).
+     *
+     * @return array<int, object>
+     */
+    public static function get_borrowers_summary(): array {
+        global $wpdb;
+        $table = self::table();
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+        return $wpdb->get_results(
+            "SELECT
+                 stats.user_id,
+                 stats.borrower_name,
+                 latest.borrower_full_name,
+                 latest.borrower_contact,
+                 stats.total_borrows,
+                 stats.active_borrows,
+                 stats.returned_borrows,
+                 stats.overdue_borrows,
+                 stats.last_borrowed
+             FROM (
+                 SELECT
+                     user_id,
+                     borrower_name,
+                     COUNT(*)                                                                                                   AS total_borrows,
+                     SUM( CASE WHEN action = 'borrowed' AND date_returned IS NULL THEN 1 ELSE 0 END )                          AS active_borrows,
+                     SUM( CASE WHEN date_returned IS NOT NULL THEN 1 ELSE 0 END )                                              AS returned_borrows,
+                     SUM( CASE WHEN action = 'borrowed' AND date_returned IS NULL AND date_due IS NOT NULL AND date_due < UTC_TIMESTAMP() THEN 1 ELSE 0 END ) AS overdue_borrows,
+                     MAX( date_borrowed )                                                                                       AS last_borrowed,
+                     MAX( id )                                                                                                  AS latest_id
+                 FROM {$table}
+                 GROUP BY user_id, borrower_name
+             ) stats
+             LEFT JOIN {$table} latest ON latest.id = stats.latest_id
+             ORDER BY stats.last_borrowed DESC"
+        );
+    }
+
+    /**
+     * Get all log entries for a specific WP user (borrower history).
+     *
+     * @param  int $user_id WordPress user ID.
+     * @return array<int, object>
+     */
+    public static function get_logs_for_borrower( int $user_id ): array {
+        global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT l.*, p.post_title AS item_title
+                 FROM ' . self::table() . ' l
+                 LEFT JOIN ' . $wpdb->posts . " p ON p.ID = l.item_id
+                 WHERE l.user_id = %d
+                 ORDER BY l.date_borrowed DESC",
+                $user_id
+            )
+        );
     }
 }

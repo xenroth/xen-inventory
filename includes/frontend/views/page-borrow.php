@@ -87,8 +87,40 @@ get_header();
             <div class="xen-borrow-page__form-wrap">
                 <h2><?php esc_html_e( 'Borrow This Item', 'xen-inventory' ); ?></h2>
 
+                <?php
+                $current_user    = wp_get_current_user();
+                $default_fullname = trim( ( $current_user->first_name ?? '' ) . ' ' . ( $current_user->last_name ?? '' ) ) ?: ( $current_user->display_name ?? '' );
+                ?>
                 <form id="xen-borrow-page-form" class="xen-form" novalidate>
                     <input type="hidden" name="item_id" value="<?php echo (int) $item_id; ?>" />
+
+                    <div class="xen-form__group">
+                        <label for="xen-bp-fullname">
+                            <?php esc_html_e( 'Full Name / Entity', 'xen-inventory' ); ?>
+                            <span class="xen-required-star" aria-hidden="true">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="xen-bp-fullname"
+                            name="borrower_full_name"
+                            value="<?php echo esc_attr( $default_fullname ); ?>"
+                            required
+                            placeholder="<?php esc_attr_e( 'e.g. Juan dela Cruz or IT Department', 'xen-inventory' ); ?>"
+                        />
+                    </div>
+
+                    <div class="xen-form__group">
+                        <label for="xen-bp-contact">
+                            <?php esc_html_e( 'Contact', 'xen-inventory' ); ?>
+                            <span class="xen-form__optional"><?php esc_html_e( '(mobile or Facebook \u2014 optional)', 'xen-inventory' ); ?></span>
+                        </label>
+                        <input
+                            type="text"
+                            id="xen-bp-contact"
+                            name="borrower_contact"
+                            placeholder="<?php esc_attr_e( '+63 912 345 6789 or fb.com/yourname', 'xen-inventory' ); ?>"
+                        />
+                    </div>
 
                     <div class="xen-form__group">
                         <label for="xen-bp-quantity"><?php esc_html_e( 'Quantity', 'xen-inventory' ); ?></label>

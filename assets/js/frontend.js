@@ -35,8 +35,15 @@
             xenInventory.i18n.borrowTitle ? xenInventory.i18n.borrowTitle.replace( '%s', itemTitle ) : itemTitle
         );
         $message.text( '' ).removeClass( 'xen-form__message--error xen-form__message--success' );
+
+        // Pre-fill borrower full name from WP user profile if not already set.
+        const $fullname = $form.find( '[name="borrower_full_name"]' );
+        if ( ! $fullname.val() ) {
+            $fullname.val( $form.data( 'user-fullname' ) || '' );
+        }
+
         $modal.removeAttr( 'hidden' );
-        $modal.find( 'input[name="quantity"]' ).trigger( 'focus' );
+        $modal.find( '#xen-borrow-fullname' ).trigger( 'focus' );
     }
 
     function closeModal() {
@@ -73,12 +80,14 @@
         $message.text( '' ).removeClass( 'xen-form__message--error xen-form__message--success' );
 
         const data = {
-            action:   'xen_borrow_item',
-            nonce:    xenInventory.borrowNonce,
-            item_id:  $itemId.val(),
-            quantity: $form.find( '[name="quantity"]' ).val(),
-            date_due: $form.find( '[name="date_due"]' ).val(),
-            notes:    $form.find( '[name="notes"]' ).val(),
+            action:              'xen_borrow_item',
+            nonce:               xenInventory.borrowNonce,
+            item_id:             $itemId.val(),
+            borrower_full_name:  $form.find( '[name="borrower_full_name"]' ).val(),
+            borrower_contact:    $form.find( '[name="borrower_contact"]' ).val(),
+            quantity:            $form.find( '[name="quantity"]' ).val(),
+            date_due:            $form.find( '[name="date_due"]' ).val(),
+            notes:               $form.find( '[name="notes"]' ).val(),
         };
 
         $.post( xenInventory.ajaxUrl, data )

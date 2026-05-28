@@ -37,7 +37,9 @@ $where_args = [];
 
 if ( $filter_search ) {
     $like          = '%' . $wpdb->esc_like( $filter_search ) . '%';
-    $where[]       = '( l.borrower_name LIKE %s OR p.post_title LIKE %s )';
+    $where[]       = '( l.borrower_name LIKE %s OR l.borrower_full_name LIKE %s OR l.borrower_contact LIKE %s OR p.post_title LIKE %s )';
+    $where_args[]  = $like;
+    $where_args[]  = $like;
     $where_args[]  = $like;
     $where_args[]  = $like;
 }
@@ -147,6 +149,7 @@ $pages = (int) ceil( $total / $per_page );
                 <tr>
                     <th><?php esc_html_e( 'Item',      'xen-inventory' ); ?></th>
                     <th><?php esc_html_e( 'Borrower',  'xen-inventory' ); ?></th>
+                    <th><?php esc_html_e( 'Contact',   'xen-inventory' ); ?></th>
                     <th><?php esc_html_e( 'Action',    'xen-inventory' ); ?></th>
                     <th><?php esc_html_e( 'Qty',       'xen-inventory' ); ?></th>
                     <th><?php esc_html_e( 'Borrowed',  'xen-inventory' ); ?></th>
@@ -163,7 +166,13 @@ $pages = (int) ceil( $total / $per_page );
                                 <?php echo esc_html( $log->item_title ); ?>
                             </a>
                         </td>
-                        <td><?php echo esc_html( $log->borrower_name ); ?></td>
+                        <td>
+                            <strong><?php echo esc_html( $log->borrower_name ); ?></strong>
+                            <?php if ( ! empty( $log->borrower_full_name ) ) : ?>
+                                <br><span><?php echo esc_html( $log->borrower_full_name ); ?></span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo esc_html( $log->borrower_contact ?? '' ); ?></td>
                         <td>
                             <span class="xen-badge xen-badge--<?php echo esc_attr( $log->action ); ?>">
                                 <?php echo esc_html( ucfirst( $log->action ) ); ?>
