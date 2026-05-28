@@ -365,6 +365,40 @@ class InventoryLog {
     }
 
     /**
+     * Delete ALL borrow log rows and record an audit entry.
+     *
+     * @param  string $reason     Admin-provided reason for the deletion.
+     * @param  int    $deleted_by WordPress user ID performing the action.
+     * @return int  Number of rows that were deleted.
+     */
+    public static function delete_all_logs( string $reason, int $deleted_by ): int {
+        global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $count = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . self::table() );
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->query( 'TRUNCATE TABLE ' . self::table() ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+        // Write to rolling audit log (keeps the last 50 events).
+        $audit = get_option( 'xen_purge_audit_log', [] );
+        if ( ! is_array( $audit ) ) {
+            $audit = [];
+        }
+        $user    = get_userdata( $deleted_by );
+        $audit[] = [
+            'date'            => current_time( 'mysql', true ),
+            'user_id'         => $deleted_by,
+            'user_display'    => $user ? $user->display_name : '(unknown)',
+            'reason'          => $reason,
+            'records_deleted' => $count,
+        ];
+        update_option( 'xen_purge_audit_log', array_slice( $audit, -50 ) );
+
+        return $count;
+    }
+
+    /**
      * Get all log entries for a specific WP user (borrower history).
      *
      * @param  int $user_id WordPress user ID.

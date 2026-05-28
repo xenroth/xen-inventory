@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 
-<div class="xen-calendar-wrap" id="xen-calendar-wrap">
+<div class="xen-calendar-wrap xen-calendar-wrap--<?php echo esc_attr( $calendar_size ?? 'normal' ); ?>" id="xen-calendar-wrap">
     <div class="xen-calendar-toolbar">
         <h2 class="xen-calendar-title"><?php esc_html_e( 'Borrow Calendar', 'xen-inventory' ); ?></h2>
         <p class="xen-calendar-legend">
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
     <!-- FullCalendar mounts here (wrapped for external scrollbar). -->
     <div class="xen-calendar-scroller">
-        <div id="xen-fullcalendar"></div>
+        <div id="xen-fullcalendar" data-size="<?php echo esc_attr( $calendar_size ?? 'normal' ); ?>"></div>
     </div>
 
     <!-- Event detail popover (filled via JS on event click). -->

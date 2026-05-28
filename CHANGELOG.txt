@@ -5,6 +5,68 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.5.5 — 2026-05-29 =
+------------------------------------------------------------------------------
+
+== Added ==
+
+* [Dashboard] Version card — shows currently installed version and remote
+  version (from cached GitHub release transient); includes a "Check for
+  Updates" link that busts the transient and forces a fresh lookup.
+
+* [Dashboard] What's New card — displays a bullet list of v1.5.5 highlights
+  directly on the dashboard for at-a-glance awareness.
+
+* [Dashboard] Quick Start Guide card — collapsible <details> element with a
+  numbered six-step guide for new site admins.
+
+* [Settings] "Default Inventory Columns" select (1–6) — controls the default
+  column count used by the [xen_inventory_display] shortcode when no columns
+  attribute is supplied.
+
+* [Settings] "Calendar Display Size" select (compact / normal / large) — sets
+  the aspect-ratio / font-size modifier class applied to the calendar wrapper.
+
+* [Settings] Danger Zone — "Delete All Borrow/Return History" form.  Requires
+  the admin to type "CONFIRM DELETION" and supply a written reason before the
+  submit button is enabled.  A native browser confirm() dialog provides a
+  second gate.  Every deletion is recorded in the xen_purge_audit_log option
+  (last 50 events) with date, user, reason, and row count.
+
+* [Borrowers] Status filter dropdown — filter the borrowers table by
+  "Has active borrows", "Has overdue", or "Returned only" in addition to the
+  existing name search.
+
+* [Borrowers] Export CSV — exports the full borrowers summary (entity name,
+  contact, transactions, active/overdue/returned counts, last borrowed date)
+  as a UTF-8 BOM CSV via admin-post.php.
+
+== Changed ==
+
+* [Updater] Fixed double-update indicator bug — after a successful plugin
+  update WordPress still showed "update available" until the dashboard was
+  visited a second time.  The injector now reads the installed file header
+  via get_plugin_data() instead of the stale boot-time constant, and
+  purge_cache() additionally flushes the core update_plugins transient so
+  WordPress re-evaluates the version immediately.
+
+* [Calendar] Scrollbar no longer overlaps the Sunday column date number.
+  FullCalendar is now initialised with height:'auto' (no internal scroll
+  containers) and belt-and-suspenders CSS forces .fc-scroller to
+  overflow:hidden and .fc-scroller-liquid-absolute to position:relative /
+  overflow:visible.
+
+* [Inventory Display] Default per-page automatically calculated as
+  columns × 3 (3 rows) unless overridden by the shortcode per_page attribute,
+  keeping the initial view compact and consistent.
+
+* [Borrowers] Page header stat now reads "N borrower entities — identified by
+  name…" for clarity; table "Total" column renamed to "Transactions".
+
+* [Dashboard] Recent activity column uses borrower_full_name (falling back to
+  borrower_name) for consistent identity display.
+
+------------------------------------------------------------------------------
 = 1.5.4 — 2026-05-28 =
 ------------------------------------------------------------------------------
 

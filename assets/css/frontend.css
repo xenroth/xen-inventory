@@ -539,6 +539,26 @@
     border-radius: 9999px;
 }
 
+/* Calendar display-size modifiers (controlled by Settings → Calendar Display Size) */
+.xen-calendar-wrap--compact #xen-fullcalendar {
+    font-size: 0.6875rem;
+}
+.xen-calendar-wrap--compact #xen-fullcalendar .fc-daygrid-day-frame {
+    min-height: 3.5rem;
+}
+.xen-calendar-wrap--compact #xen-fullcalendar .fc-toolbar-title {
+    font-size: 0.8125rem;
+}
+.xen-calendar-wrap--large #xen-fullcalendar {
+    font-size: 0.9375rem;
+}
+.xen-calendar-wrap--large #xen-fullcalendar .fc-daygrid-day-frame {
+    min-height: 7rem;
+}
+.xen-calendar-wrap--large #xen-fullcalendar .fc-toolbar-title {
+    font-size: 1.125rem;
+}
+
 #xen-fullcalendar {
     background: transparent;
     border: none;
@@ -585,6 +605,23 @@
 /* Cell minimum height — keep cells compact */
 #xen-fullcalendar .fc-daygrid-day-frame {
     min-height: 4.75rem;
+}
+
+/* ---- Prevent FullCalendar internal scroll from overlapping grid columns ----
+   FullCalendar creates .fc-scroller wrappers that can produce vertical
+   scrollbars overlapping the last/first column. With height:'auto' set in
+   the JS initialiser these should be empty, but belt-and-suspenders CSS
+   ensures no internal overflow ever appears. */
+#xen-fullcalendar .fc-scroller {
+    overflow: hidden !important;
+    height:   auto   !important;
+}
+#xen-fullcalendar .fc-scroller-harness {
+    overflow: visible;
+}
+#xen-fullcalendar .fc-scroller-liquid-absolute {
+    position: relative !important;
+    overflow: visible  !important;
 }
 
 /* Event chips */

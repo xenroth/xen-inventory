@@ -613,3 +613,228 @@
         gap: 0.5rem;
     }
 }
+
+/* ==========================================================================
+   Dashboard info row — version / what's new / quick start
+   ========================================================================== */
+
+.xen-dashboard-info-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+.xen-info-card {
+    flex: 1 1 220px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 1.125rem 1.25rem;
+    display: flex;
+    gap: 0.875rem;
+    align-items: flex-start;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+}
+
+.xen-info-card--whats-new {
+    border-left: 3px solid #6366f1;
+}
+
+.xen-info-card--version {
+    border-left: 3px solid #10b981;
+}
+
+.xen-info-card--guide {
+    border-left: 3px solid #f59e0b;
+}
+
+.xen-info-card__icon {
+    flex-shrink: 0;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.xen-info-card__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.xen-info-card__title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    margin: 0 0 0.375rem;
+    color: #1e293b;
+    cursor: default;
+}
+
+details.xen-guide-details > summary.xen-info-card__title {
+    cursor: pointer;
+    list-style: none;
+}
+details.xen-guide-details > summary.xen-info-card__title::after {
+    content: ' ▸';
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+details.xen-guide-details[open] > summary.xen-info-card__title::after {
+    content: ' ▾';
+}
+
+.xen-info-card__value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 0.25rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.xen-whats-new-list {
+    margin: 0;
+    padding-left: 1.125rem;
+    font-size: 0.8125rem;
+    color: #475569;
+    line-height: 1.6;
+}
+
+.xen-guide-steps {
+    margin: 0.625rem 0 0;
+    padding-left: 1.125rem;
+    font-size: 0.8125rem;
+    color: #475569;
+    line-height: 1.7;
+}
+
+/* ==========================================================================
+   Danger Zone (Settings page)
+   ========================================================================== */
+
+.xen-danger-zone {
+    margin-top: 2rem;
+}
+
+.xen-danger-zone__heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #b91c1c;
+    margin-bottom: 1rem;
+}
+
+.xen-danger-zone__card {
+    background: #fff8f8;
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+
+.xen-danger-zone__card-info {
+    flex: 1 1 260px;
+}
+
+.xen-danger-zone__card-info p.description {
+    color: #64748b;
+    font-size: 0.8125rem;
+    margin-top: 0.375rem;
+}
+
+.xen-danger-zone__form {
+    flex: 1 1 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+}
+
+.xen-danger-zone__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.xen-danger-zone__field label {
+    font-size: 0.8125rem;
+}
+
+.xen-required {
+    color: #dc2626;
+    margin-left: 0.2rem;
+}
+
+.xen-danger-zone__submit {
+    background: #dc2626 !important;
+    border-color: #b91c1c !important;
+    color: #fff !important;
+    align-self: flex-start;
+}
+
+.xen-danger-zone__submit:not([disabled]):hover {
+    background: #b91c1c !important;
+}
+
+.xen-danger-zone__submit[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.xen-danger-zone__audit {
+    margin-top: 1.5rem;
+}
+
+.xen-danger-zone__audit h3 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    margin-bottom: 0.625rem;
+}
+
+/* ==========================================================================
+   Borrowers toolbar (search + filter)
+   ========================================================================== */
+
+.xen-borrowers-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    margin-bottom: 0.875rem;
+}
+
+.xen-borrowers-filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.xen-borrowers-filter-select {
+    font-size: 0.8125rem;
+    min-width: 160px;
+}
+
+.xen-borrowers-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.xen-borrowers-export-form {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.xen-borrowers-export-form .button {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}

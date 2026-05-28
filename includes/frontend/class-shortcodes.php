@@ -55,12 +55,15 @@ class Shortcodes {
 
         $settings = get_option( 'xen_inventory_settings', [] );
 
+        // Derive defaults from settings so the admin can change them globally.
+        $default_columns = min( 6, max( 1, absint( $settings['inventory_columns'] ?? 3 ) ) );
+
         $atts = shortcode_atts(
             [
                 'department' => '',
                 'status'     => '',
-                'columns'    => 3,
-                'per_page'   => $settings['items_per_page'] ?? 20,
+                'columns'    => $default_columns,
+                'per_page'   => 0, // 0 = auto-compute from columns (3 rows)
             ],
             $atts,
             'xen_inventory_display'
@@ -70,7 +73,12 @@ class Shortcodes {
         $atts['department'] = sanitize_text_field( $atts['department'] );
         $atts['status']     = sanitize_key( $atts['status'] );
         $atts['columns']    = min( 6, max( 1, absint( $atts['columns'] ) ) );
-        $atts['per_page']   = min( 100, max( 1, absint( $atts['per_page'] ) ) );
+
+        // Default per_page = columns × 3 (exactly 3 full rows).
+        if ( 0 === (int) $atts['per_page'] ) {
+            $atts['per_page'] = $atts['columns'] * 3;
+        }
+        $atts['per_page'] = min( 100, max( 1, absint( $atts['per_page'] ) ) );
 
         // Allow the filter form (GET params) to override shortcode attribute defaults.
         $allowed_statuses = [ 'available', 'borrowed', 'maintenance' ];
@@ -143,6 +151,11 @@ class Shortcodes {
         $allow_guests = ! empty( $settings['allow_guest_calendar'] );
         if ( ! $allow_guests && ! current_user_can( 'xen_view_inventory' ) ) {
             return '<p class="xen-notice">' . esc_html__( 'You must be logged in to view the calendar.', 'xen-inventory' ) . '</p>';
+        }
+
+        $calendar_size = $settings['calendar_size'] ?? 'normal';
+        if ( ! in_array( $calendar_size, [ 'compact', 'normal', 'large' ], true ) ) {
+            $calendar_size = 'normal';
         }
 
         ob_start();

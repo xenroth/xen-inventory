@@ -255,9 +255,25 @@ if ( '' !== $view_entity ) {
                     <?php endif; ?>
                 </h1>
                 <p class="xen-borrowers-page-header__sub">
-                    <?php esc_html_e( 'Entities are identified by the borrower name entered at borrow time — not the WP account.', 'xen-inventory' ); ?>
+                    <?php
+                    printf(
+                        /* translators: %d: number of unique borrower entities */
+                        esc_html__( '%d borrower entities — identified by name entered at borrow time, not WP account.', 'xen-inventory' ),
+                        (int) $total_entities
+                    );
+                    ?>
                 </p>
             </div>
+            <?php if ( ! empty( $borrowers ) ) : ?>
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="xen-borrowers-export-form">
+                <?php wp_nonce_field( 'xen_export_borrowers_csv' ); ?>
+                <input type="hidden" name="action" value="xen_export_borrowers_csv" />
+                <button type="submit" class="button">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <?php esc_html_e( 'Export CSV', 'xen-inventory' ); ?>
+                </button>
+            </form>
+            <?php endif; ?>
         </div>
 
         <?php if ( empty( $borrowers ) ) : ?>
@@ -267,7 +283,7 @@ if ( '' !== $view_entity ) {
             </div>
         <?php else : ?>
 
-        <!-- Live search bar -->
+        <!-- Live search + filter bar -->
         <div class="xen-borrowers-toolbar">
             <input
                 type="search"
@@ -276,20 +292,28 @@ if ( '' !== $view_entity ) {
                 placeholder="<?php esc_attr_e( 'Filter by name or contact…', 'xen-inventory' ); ?>"
                 aria-label="<?php esc_attr_e( 'Filter borrowers', 'xen-inventory' ); ?>"
             >
+            <div class="xen-borrowers-filters">
+                <select id="xen-borrower-status-filter" class="xen-borrowers-filter-select" aria-label="<?php esc_attr_e( 'Filter by status', 'xen-inventory' ); ?>">
+                    <option value=""><?php esc_html_e( 'All statuses', 'xen-inventory' ); ?></option>
+                    <option value="active"><?php esc_html_e( 'Has active borrows', 'xen-inventory' ); ?></option>
+                    <option value="overdue"><?php esc_html_e( 'Has overdue', 'xen-inventory' ); ?></option>
+                    <option value="returned"><?php esc_html_e( 'Returned only', 'xen-inventory' ); ?></option>
+                </select>
+            </div>
         </div>
 
         <div class="xen-table-wrap">
         <table class="wp-list-table widefat fixed striped xen-borrowers-table" id="xen-borrowers-table">
             <thead>
                 <tr>
-                    <th class="xen-col-entity"><?php esc_html_e( 'Entity / Borrower',  'xen-inventory' ); ?></th>
-                    <th class="xen-col-contact"><?php esc_html_e( 'Contact',            'xen-inventory' ); ?></th>
-                    <th class="xen-col-stat"><?php esc_html_e( 'Total',                'xen-inventory' ); ?></th>
-                    <th class="xen-col-stat"><?php esc_html_e( 'Active',               'xen-inventory' ); ?></th>
-                    <th class="xen-col-stat"><?php esc_html_e( 'Overdue',              'xen-inventory' ); ?></th>
-                    <th class="xen-col-stat"><?php esc_html_e( 'Returned',             'xen-inventory' ); ?></th>
-                    <th class="xen-col-date"><?php esc_html_e( 'Last Borrowed',        'xen-inventory' ); ?></th>
-                    <th class="xen-col-actions"><?php esc_html_e( 'Actions',           'xen-inventory' ); ?></th>
+                    <th class="xen-col-entity"><?php esc_html_e( 'Entity / Borrower',       'xen-inventory' ); ?></th>
+                    <th class="xen-col-contact"><?php esc_html_e( 'Contact',                 'xen-inventory' ); ?></th>
+                    <th class="xen-col-stat"><?php esc_html_e( 'Transactions',               'xen-inventory' ); ?></th>
+                    <th class="xen-col-stat"><?php esc_html_e( 'Active',                     'xen-inventory' ); ?></th>
+                    <th class="xen-col-stat"><?php esc_html_e( 'Overdue',                    'xen-inventory' ); ?></th>
+                    <th class="xen-col-stat"><?php esc_html_e( 'Returned',                   'xen-inventory' ); ?></th>
+                    <th class="xen-col-date"><?php esc_html_e( 'Last Borrowed',              'xen-inventory' ); ?></th>
+                    <th class="xen-col-actions"><?php esc_html_e( 'Actions',                 'xen-inventory' ); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -300,8 +324,17 @@ if ( '' !== $view_entity ) {
                     admin_url( 'admin.php?page=xen-borrowers' )
                 );
                 $initials = mb_strtoupper( mb_substr( $row->display_name, 0, 1 ) );
+
+                // Build status flags for JS filtering.
+                $status_flags = '';
+                if ( (int) $row->active_borrows > 0 )  $status_flags .= ' active';
+                if ( (int) $row->overdue_borrows > 0 )  $status_flags .= ' overdue';
+                if ( (int) $row->active_borrows === 0 && (int) $row->returned_borrows > 0 ) $status_flags .= ' returned';
             ?>
-                <tr data-search="<?php echo esc_attr( strtolower( $row->display_name . ' ' . ( $row->borrower_contact ?? '' ) ) ); ?>">
+                <tr
+                    data-search="<?php echo esc_attr( strtolower( $row->display_name . ' ' . ( $row->borrower_contact ?? '' ) ) ); ?>"
+                    data-status="<?php echo esc_attr( trim( $status_flags ) ); ?>"
+                >
                     <td>
                         <div class="xen-entity-name-cell">
                             <div class="xen-entity-avatar xen-entity-avatar--sm" aria-hidden="true"><?php echo esc_html( $initials ); ?></div>
@@ -347,16 +380,27 @@ if ( '' !== $view_entity ) {
 
 <script>
 ( function () {
-    var input = document.getElementById( 'xen-borrower-search' );
-    if ( ! input ) return;
-    input.addEventListener( 'input', function () {
-        var q    = this.value.toLowerCase().trim();
-        var rows = document.querySelectorAll( '#xen-borrowers-table tbody tr' );
+    var searchInput  = document.getElementById( 'xen-borrower-search' );
+    var statusSelect = document.getElementById( 'xen-borrower-status-filter' );
+
+    function applyFilters() {
+        var q      = searchInput  ? searchInput.value.toLowerCase().trim()  : '';
+        var status = statusSelect ? statusSelect.value.toLowerCase().trim() : '';
+        var rows   = document.querySelectorAll( '#xen-borrowers-table tbody tr' );
+
         rows.forEach( function ( row ) {
-            var haystack = ( row.dataset.search || '' );
-            row.style.display = ( ! q || haystack.indexOf( q ) > -1 ) ? '' : 'none';
+            var haystack    = ( row.dataset.search || '' );
+            var rowStatus   = ( row.dataset.status || '' );
+
+            var matchSearch = ! q      || haystack.indexOf( q ) > -1;
+            var matchStatus = ! status || rowStatus.indexOf( status ) > -1;
+
+            row.style.display = ( matchSearch && matchStatus ) ? '' : 'none';
         } );
-    } );
+    }
+
+    if ( searchInput )  searchInput.addEventListener( 'input',  applyFilters );
+    if ( statusSelect ) statusSelect.addEventListener( 'change', applyFilters );
 } )();
 </script>
 

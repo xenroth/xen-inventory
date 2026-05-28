@@ -86,6 +86,73 @@ class Settings {
             ]
         );
 
+        add_settings_field(
+            'inventory_columns',
+            __( 'Inventory Grid Columns', 'xen-inventory' ),
+            [ $this, 'field_select' ],
+            'xen-inventory-settings',
+            'xen_general',
+            [
+                'key'     => 'inventory_columns',
+                'default' => 3,
+                'options' => [
+                    1 => __( '1 column',  'xen-inventory' ),
+                    2 => __( '2 columns', 'xen-inventory' ),
+                    3 => __( '3 columns (default)', 'xen-inventory' ),
+                    4 => __( '4 columns', 'xen-inventory' ),
+                    5 => __( '5 columns', 'xen-inventory' ),
+                    6 => __( '6 columns', 'xen-inventory' ),
+                ],
+                'label' => __( 'Default number of columns for [xen_inventory_display]. Overridden by the shortcode columns="" attribute.', 'xen-inventory' ),
+            ]
+        );
+
+        add_settings_field(
+            'calendar_size',
+            __( 'Calendar Display Size', 'xen-inventory' ),
+            [ $this, 'field_select' ],
+            'xen-inventory-settings',
+            'xen_general',
+            [
+                'key'     => 'calendar_size',
+                'default' => 'normal',
+                'options' => [
+                    'compact' => __( 'Compact', 'xen-inventory' ),
+                    'normal'  => __( 'Normal (default)', 'xen-inventory' ),
+                    'large'   => __( 'Large', 'xen-inventory' ),
+                ],
+                'label' => __( 'Controls the aspect ratio of the [xen_inventory_calendar] shortcode.', 'xen-inventory' ),
+            ]
+        );
+
+        // --- Advanced section ---
+        add_settings_section(
+            'xen_advanced',
+            __( 'Advanced', 'xen-inventory' ),
+            '__return_false',
+            'xen-inventory-settings'
+        );
+
+        add_settings_field(
+            'github_token',
+            __( 'GitHub Token (optional)', 'xen-inventory' ),
+            [ $this, 'field_password' ],
+            'xen-inventory-settings',
+            'xen_advanced',
+            [
+                'key'   => 'github_token',
+                'label' => __( 'Personal Access Token for higher GitHub API rate limits. Leave blank for public-repo access.', 'xen-inventory' ),
+            ]
+        );
+
+        add_settings_field(
+            'delete_data_on_uninstall',
+            __( 'Delete Data on Uninstall', 'xen-inventory' ),
+            [ $this, 'field_delete_on_uninstall' ],
+            'xen-inventory-settings',
+            'xen_advanced'
+        );
+
     }
 
     // -----------------------------------------------------------------------
@@ -114,6 +181,58 @@ class Settings {
             <?php esc_html_e( 'Warning: this action is irreversible. Leave unchecked to keep your data when removing the plugin.', 'xen-inventory' ); ?>
         </p>
         <?php
+    }
+
+    /**
+     * Render a select dropdown field.
+     *
+     * @param  array<string, mixed> $args Field arguments.
+     * @return void
+     */
+    public function field_select( array $args ): void {
+        $options  = get_option( self::OPTION_KEY, [] );
+        $selected = $options[ $args['key'] ] ?? $args['default'];
+
+        printf(
+            '<select name="%s[%s]">',
+            esc_attr( self::OPTION_KEY ),
+            esc_attr( $args['key'] )
+        );
+        foreach ( $args['options'] as $val => $label ) {
+            printf(
+                '<option value="%s"%s>%s</option>',
+                esc_attr( (string) $val ),
+                selected( (string) $selected, (string) $val, false ),
+                esc_html( $label )
+            );
+        }
+        echo '</select>';
+
+        if ( ! empty( $args['label'] ) ) {
+            echo '<p class="description">' . esc_html( $args['label'] ) . '</p>';
+        }
+    }
+
+    /**
+     * Render a password input field (for tokens/secrets).
+     *
+     * @param  array<string, mixed> $args Field arguments.
+     * @return void
+     */
+    public function field_password( array $args ): void {
+        $options = get_option( self::OPTION_KEY, [] );
+        $value   = $options[ $args['key'] ] ?? '';
+
+        printf(
+            '<input type="password" autocomplete="new-password" name="%s[%s]" value="%s" class="regular-text" />',
+            esc_attr( self::OPTION_KEY ),
+            esc_attr( $args['key'] ),
+            esc_attr( $value )
+        );
+
+        if ( ! empty( $args['label'] ) ) {
+            echo '<p class="description">' . esc_html( $args['label'] ) . '</p>';
+        }
     }
 
     /**
@@ -193,10 +312,19 @@ class Settings {
 
         $clean = [];
 
-        $clean['login_page_id']          = absint( $input['login_page_id'] ?? 0 );
-        $clean['items_per_page']          = min( 100, max( 1, absint( $input['items_per_page'] ?? 20 ) ) );
-        $clean['allow_guest_calendar']    = ! empty( $input['allow_guest_calendar'] ) ? 1 : 0;
-        $clean['delete_data_on_uninstall'] = ! empty( $input['delete_data_on_uninstall'] ) ? 1 : 0;
+        $clean['login_page_id']            = absint( $input['login_page_id'] ?? 0 );
+        $clean['items_per_page']            = min( 100, max( 1, absint( $input['items_per_page'] ?? 20 ) ) );
+        $clean['allow_guest_calendar']      = ! empty( $input['allow_guest_calendar'] ) ? 1 : 0;
+        $clean['delete_data_on_uninstall']  = ! empty( $input['delete_data_on_uninstall'] ) ? 1 : 0;
+        $clean['inventory_columns']         = min( 6, max( 1, absint( $input['inventory_columns'] ?? 3 ) ) );
+
+        $allowed_sizes               = [ 'compact', 'normal', 'large' ];
+        $clean['calendar_size']      = in_array( $input['calendar_size'] ?? '', $allowed_sizes, true )
+            ? $input['calendar_size']
+            : 'normal';
+
+        // GitHub token — sanitize as plain text (not a URL, not HTML).
+        $clean['github_token'] = sanitize_text_field( $input['github_token'] ?? '' );
 
         return $clean;
     }

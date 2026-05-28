@@ -121,7 +121,13 @@ class Updater {
 
         $remote_version = ltrim( $release->tag_name, 'v' );
 
-        if ( version_compare( $remote_version, $this->version, '>' ) ) {
+        // Always read the currently-installed version from the plugin file header
+        // so that post-update checks reflect the new version without needing a
+        // second page load (avoids the "double-click update" phantom notice).
+        $plugin_data       = get_plugin_data( WP_PLUGIN_DIR . '/' . $this->plugin_file, false, false );
+        $installed_version = ! empty( $plugin_data['Version'] ) ? $plugin_data['Version'] : $this->version;
+
+        if ( version_compare( $remote_version, $installed_version, '>' ) ) {
             // An update is available — add to the "response" map.
             $transient->response[ $this->plugin_file ] = (object) [
                 'slug'         => $this->plugin_slug,
@@ -144,7 +150,7 @@ class Updater {
             $transient->no_update[ $this->plugin_file ] = (object) [
                 'slug'         => $this->plugin_slug,
                 'plugin'       => $this->plugin_file,
-                'new_version'  => $this->version,
+                'new_version'  => $installed_version,
                 'url'          => 'https://github.com/' . self::GITHUB_REPO,
                 'package'      => '',
                 'icons'        => [],
@@ -266,6 +272,10 @@ class Updater {
             'update' === $hook_extra['action']
         ) {
             delete_site_transient( self::TRANSIENT );
+            // Also bust WordPress's own update_plugins transient so the next
+            // check compares against the freshly-installed version rather than
+            // the stale pre-update value still cached there.
+            delete_site_transient( 'update_plugins' );
         }
     }
 

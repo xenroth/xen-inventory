@@ -118,4 +118,30 @@
         }
     } );
 
+    // -----------------------------------------------------------------------
+    // Danger Zone: enable purge button only when confirmation text matches.
+    // -----------------------------------------------------------------------
+
+    ( function () {
+        const confirmInput = document.getElementById( 'xen_purge_confirm' );
+        const purgeBtn     = document.getElementById( 'xen-purge-btn' );
+
+        if ( ! confirmInput || ! purgeBtn ) { return; }
+
+        confirmInput.addEventListener( 'input', function () {
+            purgeBtn.disabled = ( this.value !== 'CONFIRM DELETION' );
+        } );
+
+        // Double-guard: require explicit submit confirmation.
+        document.getElementById( 'xen-purge-form' ).addEventListener( 'submit', function ( e ) {
+            if ( confirmInput.value !== 'CONFIRM DELETION' ) {
+                e.preventDefault();
+                return;
+            }
+            if ( ! window.confirm( 'This will permanently delete ALL borrow and return records. Are you absolutely sure?' ) ) {
+                e.preventDefault();
+            }
+        } );
+    } )();
+
 } )( jQuery );

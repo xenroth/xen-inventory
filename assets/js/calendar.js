@@ -161,6 +161,12 @@
             initialView:  'dayGridMonth',
             locale:       xenCalendar.locale || 'en',
             firstDay:     parseInt( xenCalendar.firstDay, 10 ) || 0,
+            // height: 'auto' prevents FullCalendar from creating internal scroll
+            // containers that would overlap the grid columns with a scrollbar.
+            // The outer .xen-calendar-scroller wrapper handles horizontal overflow.
+            height:       'auto',
+            // Expand rows to fill the available height so all days are visible.
+            expandRows:   false,
             headerToolbar: {
                 left:   'prev,next today',
                 center: 'title',

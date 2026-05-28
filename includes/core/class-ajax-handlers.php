@@ -40,6 +40,12 @@ class AjaxHandlers {
 
         // Export borrow log as CSV (admin only, standard form POST via admin-post.php).
         add_action( 'admin_post_xen_export_log', [ $this, 'export_log_csv' ] );
+
+        // Purge all borrow/return history (manage_options only).
+        add_action( 'admin_post_xen_purge_borrow_log', [ $this, 'purge_borrow_log' ] );
+
+        // Export borrowers list as CSV.
+        add_action( 'admin_post_xen_export_borrowers_csv', [ $this, 'export_borrowers_csv' ] );
     }
 
     // -----------------------------------------------------------------------
@@ -410,5 +416,112 @@ class AjaxHandlers {
         }
 
         wp_send_json_success( $items );
+    }
+
+    /**
+     * Purge all borrow/return history records (Danger Zone).
+     *
+     * Form POST to admin-post.php with:
+     *   action              — xen_purge_borrow_log
+     *   _wpnonce            — xen_purge_borrow_log nonce
+     *   xen_purge_reason    — required reason text
+     *   xen_purge_confirm   — must equal exactly "CONFIRM DELETION"
+     *
+     * @return void
+     */
+    public function purge_borrow_log(): void {
+        check_admin_referer( 'xen_purge_borrow_log' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Permission denied.', 'xen-inventory' ), 403 );
+        }
+
+        $confirm = sanitize_text_field( wp_unslash( $_POST['xen_purge_confirm'] ?? '' ) );
+        $reason  = sanitize_textarea_field( wp_unslash( $_POST['xen_purge_reason'] ?? '' ) );
+
+        if ( 'CONFIRM DELETION' !== $confirm ) {
+            wp_safe_redirect(
+                add_query_arg(
+                    [ 'page' => 'xen-inventory-settings', 'xen_purge' => 'invalid' ],
+                    admin_url( 'admin.php' )
+                )
+            );
+            exit;
+        }
+
+        if ( '' === $reason ) {
+            wp_safe_redirect(
+                add_query_arg(
+                    [ 'page' => 'xen-inventory-settings', 'xen_purge' => 'no_reason' ],
+                    admin_url( 'admin.php' )
+                )
+            );
+            exit;
+        }
+
+        $count = \XenInventory\Models\InventoryLog::delete_all_logs( $reason, get_current_user_id() );
+
+        wp_safe_redirect(
+            add_query_arg(
+                [ 'page' => 'xen-inventory-settings', 'xen_purge' => 'done', 'xen_purge_count' => $count ],
+                admin_url( 'admin.php' )
+            )
+        );
+        exit;
+    }
+
+    /**
+     * Export borrowers summary as a UTF-8 CSV file.
+     *
+     * Triggered by a standard form POST to admin-post.php with action=xen_export_borrowers_csv.
+     *
+     * @return void  Outputs CSV and exits.
+     */
+    public function export_borrowers_csv(): void {
+        check_admin_referer( 'xen_export_borrowers_csv' );
+
+        if ( ! current_user_can( 'xen_manage_inventory' ) ) {
+            wp_die( esc_html__( 'Permission denied.', 'xen-inventory' ), 403 );
+        }
+
+        $borrowers = \XenInventory\Models\InventoryLog::get_borrowers_summary();
+        $date_fmt  = get_option( 'date_format' );
+        $filename  = 'xen-borrowers-' . gmdate( 'Y-m-d' ) . '.csv';
+
+        nocache_headers();
+        header( 'Content-Type: text/csv; charset=utf-8' );
+        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+        header( 'Pragma: no-cache' );
+        header( 'Expires: 0' );
+
+        $out = fopen( 'php://output', 'w' );
+        fwrite( $out, "\xEF\xBB\xBF" ); // UTF-8 BOM for Excel.
+
+        fputcsv( $out, [
+            __( 'Entity / Borrower Name', 'xen-inventory' ),
+            __( 'Contact',                'xen-inventory' ),
+            __( 'Total Transactions',     'xen-inventory' ),
+            __( 'Active Borrows',         'xen-inventory' ),
+            __( 'Overdue',                'xen-inventory' ),
+            __( 'Returned',               'xen-inventory' ),
+            __( 'Last Borrowed',          'xen-inventory' ),
+        ] );
+
+        foreach ( $borrowers as $row ) {
+            fputcsv( $out, [
+                $row->display_name       ?? '',
+                $row->borrower_contact   ?? '',
+                (int) $row->total_borrows,
+                (int) $row->active_borrows,
+                (int) $row->overdue_borrows,
+                (int) $row->returned_borrows,
+                $row->last_borrowed
+                    ? wp_date( $date_fmt, strtotime( $row->last_borrowed ) )
+                    : '',
+            ] );
+        }
+
+        fclose( $out );
+        exit;
     }
 }
