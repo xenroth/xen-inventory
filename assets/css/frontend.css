@@ -1,0 +1,514 @@
+/* ==========================================================================
+   XEN Inventory — Frontend Styles
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CSS Custom Properties (Design Tokens)
+   -------------------------------------------------------------------------- */
+:root {
+    --xen-color-primary:     #2563eb;
+    --xen-color-primary-hover: #1d4ed8;
+    --xen-color-available:   #16a34a;
+    --xen-color-borrowed:    #dc2626;
+    --xen-color-maintenance: #d97706;
+    --xen-color-bg:          #f8fafc;
+    --xen-color-surface:     #ffffff;
+    --xen-color-border:      #e2e8f0;
+    --xen-color-text:        #1e293b;
+    --xen-color-text-muted:  #64748b;
+    --xen-radius:            0.5rem;
+    --xen-shadow:            0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --xen-shadow-lg:         0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --xen-transition:        150ms ease;
+}
+
+/* --------------------------------------------------------------------------
+   Global Reset (scoped to plugin)
+   -------------------------------------------------------------------------- */
+.xen-inventory-wrap *,
+.xen-login-wrap *,
+.xen-calendar-wrap * {
+    box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+.xen-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1.125rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25;
+    border-radius: var(--xen-radius);
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: background-color var(--xen-transition), border-color var(--xen-transition), color var(--xen-transition);
+    text-decoration: none;
+}
+
+.xen-btn--primary {
+    background-color: var(--xen-color-primary);
+    color: #fff;
+}
+.xen-btn--primary:hover {
+    background-color: var(--xen-color-primary-hover);
+    color: #fff;
+}
+
+.xen-btn--secondary {
+    background-color: transparent;
+    border-color: var(--xen-color-primary);
+    color: var(--xen-color-primary);
+}
+.xen-btn--secondary:hover {
+    background-color: var(--xen-color-primary);
+    color: #fff;
+}
+
+.xen-btn--ghost {
+    background-color: transparent;
+    border-color: var(--xen-color-border);
+    color: var(--xen-color-text-muted);
+}
+.xen-btn--ghost:hover {
+    border-color: var(--xen-color-text-muted);
+    color: var(--xen-color-text);
+}
+
+/* --------------------------------------------------------------------------
+   Filters Bar
+   -------------------------------------------------------------------------- */
+.xen-filters {
+    margin-bottom: 1.5rem;
+}
+
+.xen-filters__inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.xen-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--xen-color-border);
+    border-radius: var(--xen-radius);
+    font-size: 0.875rem;
+    color: var(--xen-color-text);
+    background-color: var(--xen-color-surface);
+    cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   Item Grid
+   -------------------------------------------------------------------------- */
+.xen-items-grid {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.xen-items-grid--cols-1 { grid-template-columns: repeat(1, 1fr); }
+.xen-items-grid--cols-2 { grid-template-columns: repeat(2, 1fr); }
+.xen-items-grid--cols-3 { grid-template-columns: repeat(3, 1fr); }
+.xen-items-grid--cols-4 { grid-template-columns: repeat(4, 1fr); }
+.xen-items-grid--cols-5 { grid-template-columns: repeat(5, 1fr); }
+.xen-items-grid--cols-6 { grid-template-columns: repeat(6, 1fr); }
+
+@media (max-width: 768px) {
+    .xen-items-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+    .xen-items-grid { grid-template-columns: 1fr; }
+}
+
+/* --------------------------------------------------------------------------
+   Item Card
+   -------------------------------------------------------------------------- */
+.xen-item-card {
+    background: var(--xen-color-surface);
+    border: 1px solid var(--xen-color-border);
+    border-radius: var(--xen-radius);
+    overflow: hidden;
+    box-shadow: var(--xen-shadow);
+    transition: box-shadow var(--xen-transition);
+}
+
+.xen-item-card:hover {
+    box-shadow: var(--xen-shadow-lg);
+}
+
+.xen-item-card__image img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    display: block;
+}
+
+.xen-item-card__body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.xen-item-card__title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.xen-item-card__title a {
+    color: var(--xen-color-text);
+    text-decoration: none;
+}
+.xen-item-card__title a:hover { color: var(--xen-color-primary); }
+
+.xen-item-card__dept,
+.xen-item-card__qty {
+    font-size: 0.8125rem;
+    color: var(--xen-color-text-muted);
+    margin: 0;
+}
+
+.xen-item-card .xen-btn {
+    margin-top: 0.75rem;
+    align-self: flex-start;
+}
+
+/* --------------------------------------------------------------------------
+   Status Badge
+   -------------------------------------------------------------------------- */
+.xen-status-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.xen-status-badge--available   { background: #dcfce7; color: var(--xen-color-available); }
+.xen-status-badge--borrowed    { background: #fee2e2; color: var(--xen-color-borrowed); }
+.xen-status-badge--maintenance { background: #fef9c3; color: var(--xen-color-maintenance); }
+
+/* --------------------------------------------------------------------------
+   Pagination
+   -------------------------------------------------------------------------- */
+.xen-pagination {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.xen-pagination .page-numbers {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--xen-radius);
+    border: 1px solid var(--xen-color-border);
+    font-size: 0.875rem;
+    text-decoration: none;
+    color: var(--xen-color-text);
+}
+
+.xen-pagination .page-numbers.current {
+    background: var(--xen-color-primary);
+    border-color: var(--xen-color-primary);
+    color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   Modal
+   -------------------------------------------------------------------------- */
+.xen-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.xen-modal[hidden] { display: none; }
+
+.xen-modal__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.5);
+}
+
+.xen-modal__content {
+    position: relative;
+    background: var(--xen-color-surface);
+    border-radius: var(--xen-radius);
+    padding: 2rem;
+    width: min(90%, 480px);
+    box-shadow: var(--xen-shadow-lg);
+}
+
+.xen-modal__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 1.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   Form
+   -------------------------------------------------------------------------- */
+.xen-form__group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin-bottom: 1rem;
+}
+
+.xen-form__group label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--xen-color-text);
+}
+
+.xen-form__group input,
+.xen-form__group textarea {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--xen-color-border);
+    border-radius: var(--xen-radius);
+    font-size: 0.875rem;
+    width: 100%;
+}
+
+.xen-form__actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.xen-form__message {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* --------------------------------------------------------------------------
+   Notice
+   -------------------------------------------------------------------------- */
+.xen-notice {
+    padding: 0.75rem 1rem;
+    border-radius: var(--xen-radius);
+    border: 1px solid var(--xen-color-border);
+    background: var(--xen-color-bg);
+    font-size: 0.875rem;
+    color: var(--xen-color-text-muted);
+}
+
+.xen-notice--error {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+
+/* --------------------------------------------------------------------------
+   Login Card
+   -------------------------------------------------------------------------- */
+.xen-login-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.xen-login-card {
+    background: var(--xen-color-surface);
+    border: 1px solid var(--xen-color-border);
+    border-radius: var(--xen-radius);
+    padding: 2rem;
+    width: min(100%, 400px);
+    box-shadow: var(--xen-shadow);
+}
+
+.xen-login-card__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 1.5rem;
+}
+
+.xen-login-card__register,
+.xen-login-card__forgot {
+    text-align: center;
+    font-size: 0.8125rem;
+    margin-top: 0.75rem;
+}
+
+/* --------------------------------------------------------------------------
+   Calendar
+   -------------------------------------------------------------------------- */
+.xen-calendar-wrap {
+    position: relative;
+}
+
+.xen-calendar-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.xen-calendar-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.xen-calendar-legend {
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+    font-size: 0.8125rem;
+}
+
+.xen-legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.xen-legend::before {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.xen-legend--borrowed::before  { background: var(--xen-color-borrowed); }
+.xen-legend--returned::before  { background: var(--xen-color-available); }
+
+#xen-fullcalendar {
+    background: var(--xen-color-surface);
+    border: 1px solid var(--xen-color-border);
+    border-radius: var(--xen-radius);
+    padding: 1rem;
+}
+
+/* Event popover */
+.xen-event-popover {
+    position: absolute;
+    z-index: 100;
+    background: var(--xen-color-surface);
+    border: 1px solid var(--xen-color-border);
+    border-radius: var(--xen-radius);
+    padding: 1rem;
+    box-shadow: var(--xen-shadow-lg);
+    min-width: 200px;
+    font-size: 0.875rem;
+}
+
+.xen-event-popover[hidden] { display: none; }
+
+.xen-event-popover__close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: var(--xen-color-text-muted);
+    line-height: 1;
+}
+
+.xen-event-popover__dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 0.75rem;
+    margin: 0;
+}
+
+.xen-event-popover__dl dt { font-weight: 600; }
+.xen-event-popover__dl dd { margin: 0; color: var(--xen-color-text-muted); }
+
+/* --------------------------------------------------------------------------
+   Borrow Page (standalone /inventory/borrow/{id}/)
+   -------------------------------------------------------------------------- */
+.xen-borrow-page {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.xen-back-link {
+    display: inline-flex;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+}
+
+.xen-borrow-page__header {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+}
+
+.xen-borrow-page__image {
+    flex: 0 0 220px;
+}
+
+.xen-borrow-page__image img {
+    width: 100%;
+    border-radius: var(--xen-radius);
+    border: 1px solid var(--xen-color-border);
+    object-fit: cover;
+}
+
+.xen-borrow-page__info {
+    flex: 1 1 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.xen-borrow-page__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.25;
+}
+
+.xen-borrow-page__description {
+    font-size: 0.9375rem;
+    color: var(--xen-color-text-muted);
+    margin: 0;
+}
+
+.xen-borrow-page__form-wrap {
+    background: var(--xen-color-surface);
+    border: 1px solid var(--xen-color-border);
+    border-radius: var(--xen-radius);
+    padding: 1.5rem;
+    box-shadow: var(--xen-shadow);
+    max-width: 480px;
+}
+
+.xen-borrow-page__form-wrap h2 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0 0 1.25rem;
+}
+
+/* Page-level success/error message colours */
+.xen-form__message--success { color: var(--xen-color-available); font-weight: 600; }
+.xen-form__message--error   { color: var(--xen-color-borrowed);  font-weight: 600; }
+
+/* Shared page wrapper */
+.xen-page-wrap {
+    padding: 1.5rem 1rem;
+}

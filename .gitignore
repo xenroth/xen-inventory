@@ -1,0 +1,17 @@
+# WordPress
+wp-config.php
+wp-content/uploads/
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+.vscode/
+*.log
+
+# Build artifacts
+*.min.css
+*.min.js

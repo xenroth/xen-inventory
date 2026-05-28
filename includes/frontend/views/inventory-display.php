@@ -1,0 +1,168 @@
+<?php
+/**
+ * Frontend View: Inventory Display ([xen_inventory_display] shortcode).
+ *
+ * Variables available from Shortcodes::render_inventory_display():
+ *   $items_query   WP_Query
+ *   $atts          array   Shortcode attributes (columns, per_page, status, department).
+ *   $departments   array   WP_Term[]
+ *
+ * @package XenInventory\Frontend
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+$current_dept   = sanitize_text_field( $_GET['xen_dept']   ?? $atts['department'] );
+$current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
+?>
+
+<div class="xen-inventory-wrap" id="xen-inventory">
+
+    <!-- Filters -->
+    <form class="xen-filters" method="get" action="">
+        <div class="xen-filters__inner">
+
+            <!-- Department filter -->
+            <label for="xen-dept-filter" class="screen-reader-text">
+                <?php esc_html_e( 'Filter by Department', 'xen-inventory' ); ?>
+            </label>
+            <select id="xen-dept-filter" name="xen_dept" class="xen-select">
+                <option value=""><?php esc_html_e( 'All Departments', 'xen-inventory' ); ?></option>
+                <?php foreach ( $departments as $dept ) : ?>
+                    <option value="<?php echo esc_attr( $dept->slug ); ?>" <?php selected( $current_dept, $dept->slug ); ?>>
+                        <?php echo esc_html( $dept->name ); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <!-- Status filter -->
+            <label for="xen-status-filter" class="screen-reader-text">
+                <?php esc_html_e( 'Filter by Status', 'xen-inventory' ); ?>
+            </label>
+            <select id="xen-status-filter" name="xen_status" class="xen-select">
+                <option value=""><?php esc_html_e( 'All Statuses', 'xen-inventory' ); ?></option>
+                <option value="available"   <?php selected( $current_status, 'available' ); ?>><?php esc_html_e( 'Available',   'xen-inventory' ); ?></option>
+                <option value="borrowed"    <?php selected( $current_status, 'borrowed' ); ?>><?php esc_html_e( 'Borrowed',     'xen-inventory' ); ?></option>
+                <option value="maintenance" <?php selected( $current_status, 'maintenance' ); ?>><?php esc_html_e( 'Maintenance', 'xen-inventory' ); ?></option>
+            </select>
+
+            <button type="submit" class="xen-btn xen-btn--secondary">
+                <?php esc_html_e( 'Filter', 'xen-inventory' ); ?>
+            </button>
+        </div>
+    </form>
+
+    <!-- Item Grid -->
+    <?php if ( $items_query->have_posts() ) : ?>
+
+        <div class="xen-items-grid xen-items-grid--cols-<?php echo (int) $atts['columns']; ?>">
+            <?php while ( $items_query->have_posts() ) : $items_query->the_post(); ?>
+
+                <?php
+                $item_status   = get_post_meta( get_the_ID(), '_xen_item_status',   true ) ?: 'available';
+                $total_qty     = (int) get_post_meta( get_the_ID(), '_xen_total_quantity', true );
+                $item_depts    = get_the_terms( get_the_ID(), 'xen_department' );
+                ?>
+
+                <article class="xen-item-card xen-item-card--<?php echo esc_attr( $item_status ); ?>">
+
+                    <?php if ( has_post_thumbnail() ) : ?>
+                        <div class="xen-item-card__image">
+                            <?php the_post_thumbnail( 'medium' ); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="xen-item-card__body">
+
+                        <span class="xen-status-badge xen-status-badge--<?php echo esc_attr( $item_status ); ?>">
+                            <?php echo esc_html( ucfirst( $item_status ) ); ?>
+                        </span>
+
+                        <h3 class="xen-item-card__title">
+                            <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                        </h3>
+
+                        <?php if ( $item_depts && ! is_wp_error( $item_depts ) ) : ?>
+                            <p class="xen-item-card__dept">
+                                <?php echo esc_html( implode( ', ', wp_list_pluck( $item_depts, 'name' ) ) ); ?>
+                            </p>
+                        <?php endif; ?>
+
+                        <p class="xen-item-card__qty">
+                            <?php
+                            /* translators: %d: total quantity */
+                            printf( esc_html__( 'Qty: %d', 'xen-inventory' ), $total_qty );
+                            ?>
+                        </p>
+
+                        <?php if ( 'available' === $item_status && current_user_can( 'xen_borrow_items' ) ) : ?>
+                            <button
+                                class="xen-btn xen-btn--primary xen-borrow-btn"
+                                data-item-id="<?php echo (int) get_the_ID(); ?>"
+                                data-item-title="<?php echo esc_attr( get_the_title() ); ?>"
+                            >
+                                <?php esc_html_e( 'Borrow', 'xen-inventory' ); ?>
+                            </button>
+                        <?php endif; ?>
+
+                    </div><!-- .xen-item-card__body -->
+                </article>
+
+            <?php endwhile; wp_reset_postdata(); ?>
+        </div><!-- .xen-items-grid -->
+
+        <!-- Pagination -->
+        <div class="xen-pagination">
+            <?php
+            $pagination_args = array_filter( [
+                'xen_dept'   => $current_dept,
+                'xen_status' => $current_status,
+            ] );
+            echo paginate_links( [
+                'total'     => $items_query->max_num_pages,
+                'current'   => max( 1, absint( get_query_var( 'paged' ) ) ),
+                'add_args'  => $pagination_args,
+            ] );
+            ?>
+        </div>
+
+    <?php else : ?>
+        <p class="xen-notice"><?php esc_html_e( 'No items found matching your criteria.', 'xen-inventory' ); ?></p>
+    <?php endif; ?>
+
+    <!-- Borrow Modal -->
+    <div class="xen-modal" id="xen-borrow-modal" role="dialog" aria-modal="true" aria-labelledby="xen-modal-title" hidden>
+        <div class="xen-modal__overlay" data-xen-close-modal></div>
+        <div class="xen-modal__content">
+            <h2 class="xen-modal__title" id="xen-modal-title"><?php esc_html_e( 'Borrow Item', 'xen-inventory' ); ?></h2>
+            <form id="xen-borrow-form" class="xen-form">
+                <input type="hidden" name="item_id" id="xen-borrow-item-id" value="" />
+
+                <div class="xen-form__group">
+                    <label for="xen-borrow-quantity"><?php esc_html_e( 'Quantity', 'xen-inventory' ); ?></label>
+                    <input type="number" id="xen-borrow-quantity" name="quantity" value="1" min="1" required />
+                </div>
+
+                <div class="xen-form__group">
+                    <label for="xen-borrow-due"><?php esc_html_e( 'Expected Return Date', 'xen-inventory' ); ?></label>
+                    <input type="date" id="xen-borrow-due" name="date_due" />
+                </div>
+
+                <div class="xen-form__group">
+                    <label for="xen-borrow-notes"><?php esc_html_e( 'Notes', 'xen-inventory' ); ?></label>
+                    <textarea id="xen-borrow-notes" name="notes" rows="3"></textarea>
+                </div>
+
+                <div class="xen-form__actions">
+                    <button type="submit" class="xen-btn xen-btn--primary"><?php esc_html_e( 'Confirm Borrow', 'xen-inventory' ); ?></button>
+                    <button type="button" class="xen-btn xen-btn--ghost" data-xen-close-modal><?php esc_html_e( 'Cancel', 'xen-inventory' ); ?></button>
+                </div>
+
+                <div class="xen-form__message" aria-live="polite"></div>
+            </form>
+        </div>
+    </div>
+
+</div><!-- .xen-inventory-wrap -->
