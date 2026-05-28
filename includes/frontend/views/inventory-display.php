@@ -309,4 +309,74 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
     </div>
     <?php endif; ?>
 
+    <!-- My Borrow History (current user only) -->
+    <?php
+    if ( is_user_logged_in() ) :
+        $my_history = \XenInventory\Models\InventoryLog::get_all_borrows_for_user( get_current_user_id() );
+        $df         = get_option( 'date_format' );
+    ?>
+    <div class="xen-my-history">
+        <h3 class="xen-my-borrows__title"><?php esc_html_e( 'My Borrow History', 'xen-inventory' ); ?></h3>
+        <?php if ( empty( $my_history ) ) : ?>
+            <p class="xen-notice"><?php esc_html_e( 'You have no borrow history yet.', 'xen-inventory' ); ?></p>
+        <?php else : ?>
+        <div class="xen-history-table-wrap">
+            <table class="xen-history-table">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e( 'Item',          'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Borrowed',      'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Due',           'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Returned',      'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Qty',           'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Tags',          'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Status',        'xen-inventory' ); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ( $my_history as $row ) :
+                        $is_returned = ! empty( $row->date_returned );
+                        $due_ts      = $row->date_due ? strtotime( $row->date_due ) : null;
+                        $is_overdue  = ! $is_returned && $due_ts && $due_ts < time();
+                        $status_cls  = $is_returned ? 'returned' : ( $is_overdue ? 'overdue' : 'active' );
+                        $status_lbl  = $is_returned
+                            ? esc_html__( 'Returned', 'xen-inventory' )
+                            : ( $is_overdue ? esc_html__( 'Overdue', 'xen-inventory' ) : esc_html__( 'Active', 'xen-inventory' ) );
+                        $tags        = array_filter( array_map( 'trim', explode( ',', (string) $row->borrow_tags ) ) );
+                    ?>
+                    <tr>
+                        <td>
+                            <a href="<?php echo esc_url( get_permalink( $row->item_id ) ); ?>">
+                                <?php echo esc_html( $row->item_title ); ?>
+                            </a>
+                        </td>
+                        <td><?php echo esc_html( wp_date( $df, strtotime( $row->date_borrowed ) ) ); ?></td>
+                        <td><?php echo $due_ts ? esc_html( wp_date( $df, $due_ts ) ) : '—'; ?></td>
+                        <td><?php echo $is_returned ? esc_html( wp_date( $df, strtotime( $row->date_returned ) ) ) : '—'; ?></td>
+                        <td><?php echo (int) $row->quantity; ?></td>
+                        <td>
+                            <?php if ( $tags ) : ?>
+                                <span class="xen-tags">
+                                    <?php foreach ( $tags as $tag ) : ?>
+                                        <span class="xen-tag"><?php echo esc_html( $tag ); ?></span>
+                                    <?php endforeach; ?>
+                                </span>
+                            <?php else : ?>
+                                <span class="xen-text-muted">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <span class="xen-history-status xen-history-status--<?php echo esc_attr( $status_cls ); ?>">
+                                <?php echo $status_lbl; ?>
+                            </span>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
 </div><!-- .xen-inventory-wrap -->

@@ -156,6 +156,72 @@ get_header();
         </div><!-- .xen-item-detail__info -->
     </div><!-- .xen-item-detail__layout -->
 
+    <!-- Borrow History ----------------------------------------------------->
+    <?php
+    $item_logs = \XenInventory\Models\InventoryLog::get_public_logs_for_item( $item_id, 30 );
+    $df        = get_option( 'date_format' );
+    ?>
+    <div class="xen-item-detail__history">
+        <h2 class="xen-item-detail__history-title"><?php esc_html_e( 'Borrow History', 'xen-inventory' ); ?></h2>
+
+        <?php if ( empty( $item_logs ) ) : ?>
+            <p class="xen-notice"><?php esc_html_e( 'This item has not been borrowed yet.', 'xen-inventory' ); ?></p>
+        <?php else : ?>
+        <div class="xen-history-table-wrap">
+            <table class="xen-history-table">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e( 'Borrower',  'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Borrowed',  'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Due',       'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Returned',  'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Qty',       'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Tags',      'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Status',    'xen-inventory' ); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ( $item_logs as $log ) :
+                        $is_returned = ! empty( $log->date_returned );
+                        $due_ts      = $log->date_due ? strtotime( $log->date_due ) : null;
+                        $is_overdue  = ! $is_returned && $due_ts && $due_ts < time();
+                        $status_cls  = $is_returned ? 'returned' : ( $is_overdue ? 'overdue' : 'active' );
+                        $status_lbl  = $is_returned
+                            ? esc_html__( 'Returned', 'xen-inventory' )
+                            : ( $is_overdue ? esc_html__( 'Overdue', 'xen-inventory' ) : esc_html__( 'Active', 'xen-inventory' ) );
+                        $borrower    = $log->borrower_full_name ?: $log->borrower_name;
+                        $tags        = array_filter( array_map( 'trim', explode( ',', (string) $log->borrow_tags ) ) );
+                    ?>
+                    <tr>
+                        <td><?php echo esc_html( $borrower ); ?></td>
+                        <td><?php echo esc_html( wp_date( $df, strtotime( $log->date_borrowed ) ) ); ?></td>
+                        <td><?php echo $due_ts ? esc_html( wp_date( $df, $due_ts ) ) : '—'; ?></td>
+                        <td><?php echo $is_returned ? esc_html( wp_date( $df, strtotime( $log->date_returned ) ) ) : '—'; ?></td>
+                        <td><?php echo (int) $log->quantity; ?></td>
+                        <td>
+                            <?php if ( $tags ) : ?>
+                                <span class="xen-tags">
+                                    <?php foreach ( $tags as $tag ) : ?>
+                                        <span class="xen-tag"><?php echo esc_html( $tag ); ?></span>
+                                    <?php endforeach; ?>
+                                </span>
+                            <?php else : ?>
+                                <span class="xen-text-muted">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <span class="xen-history-status xen-history-status--<?php echo esc_attr( $status_cls ); ?>">
+                                <?php echo $status_lbl; ?>
+                            </span>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+    </div><!-- .xen-item-detail__history -->
+
 </div><!-- .xen-item-detail -->
 </main>
 

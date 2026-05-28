@@ -5,6 +5,40 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.5.3 — 2026-05-29 =
+------------------------------------------------------------------------------
+
+== Added ==
+
+* [Frontend] "My Borrow History" section on the inventory display page.
+  Logged-in users can now see their complete personal borrow history
+  (active + returned items) in a scrollable responsive table below the
+  active-borrows list. The query is strictly scoped to the current user's
+  `user_id`, so no one can see another borrower's records.
+  Columns: Item, Borrowed, Due, Returned, Qty, Tags, Status.
+
+* [Single Item Page] Borrow history table on the item detail page.
+  A "Borrow History" section now appears below the two-column product
+  layout on every `xen_item` single page. Shows the last 30 borrow
+  records for that item.
+  Columns: Borrower, Borrowed, Due, Returned, Qty, Tags, Status.
+  Visible to all logged-in users; borrower contact details are intentionally
+  omitted from the frontend query.
+
+* [Model] `get_all_borrows_for_user(int $user_id)` — returns active and
+  returned borrow rows for a single user (INNER JOIN on published posts,
+  LIMIT 50, ordered newest first). Used by the "My Borrow History" section.
+
+* [Model] `get_public_logs_for_item(int $item_id, int $limit = 20)` — returns
+  the N most recent `borrowed` log rows for a given item, omitting sensitive
+  contact columns. Used by the item detail borrow history table.
+
+* [CSS] History table styles: `.xen-history-table-wrap`, `.xen-history-table`,
+  `.xen-history-status` status chips (active/returned/overdue),
+  `.xen-tags` / `.xen-tag` tag chip components, and `.xen-my-history`
+  section wrapper. Horizontally scrollable on mobile.
+
+------------------------------------------------------------------------------
 = 1.5.2 — 2026-05-28 =
 ------------------------------------------------------------------------------
 

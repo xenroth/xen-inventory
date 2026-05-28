@@ -361,4 +361,61 @@ class InventoryLog {
             )
         );
     }
+
+    /**
+     * Get ALL borrow log entries (active + returned) for a specific user.
+     *
+     * Used on the frontend "My Borrow History" section so a user can see
+     * their complete personal history — no other user's records are included.
+     *
+     * @param  int $user_id WordPress user ID.
+     * @return array<int, object>
+     */
+    public static function get_all_borrows_for_user( int $user_id ): array {
+        global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT l.*, p.post_title AS item_title
+                 FROM ' . self::table() . ' l
+                 INNER JOIN ' . $wpdb->posts . " p ON p.ID = l.item_id
+                 WHERE l.user_id = %d
+                   AND p.post_status = 'publish'
+                 ORDER BY l.date_borrowed DESC
+                 LIMIT 50",
+                $user_id
+            )
+        );
+    }
+
+    /**
+     * Get published borrow log entries for a specific item, newest first.
+     * Only shows borrower name to other users — full contact detail is omitted
+     * to protect privacy. Admins see full details via the admin screens.
+     *
+     * @param  int $item_id Post ID of the xen_item.
+     * @param  int $limit   Maximum rows to return (default 20).
+     * @return array<int, object>
+     */
+    public static function get_public_logs_for_item( int $item_id, int $limit = 20 ): array {
+        global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT id, item_id, user_id,
+                        borrower_full_name, borrower_name,
+                        action, quantity, borrow_tags,
+                        date_borrowed, date_due, date_returned, notes
+                 FROM ' . self::table() . "
+                 WHERE item_id = %d
+                   AND action = 'borrowed'
+                 ORDER BY date_borrowed DESC
+                 LIMIT %d",
+                $item_id,
+                $limit
+            )
+        );
+    }
 }

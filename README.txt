@@ -4,7 +4,7 @@ Tags:               inventory, management, borrow, tracking, departments
 Requires at least:  6.0
 Tested up to:       6.7
 Requires PHP:       8.0
-Stable tag:         1.5.2
+Stable tag:         1.5.3
 License:            GPLv2 or later
 License URI:        https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,11 @@ entries remain untouched. Data is only removed when you **delete** the plugin
 and confirm the uninstall action.
 
 == Changelog ==
+
+= 1.5.3 — 2026-05-29 =
+* New: "My Borrow History" section on the inventory page shows each logged-in user their own complete history (active + returned), never showing other users' records.
+* New: Borrow history table on the single item detail page — Date Borrowed, Due, Returned, Borrower, Qty, Tags, Status.
+* See CHANGELOG.txt for full details.
 
 = 1.5.2 — 2026-05-28 =
 * Fix: Show full item photo without cropping.
