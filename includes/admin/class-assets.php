@@ -72,12 +72,16 @@ class Assets {
         );
 
         wp_localize_script( 'xen-inventory-admin', 'xenInventoryAdmin', [
-            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-            'nonce'   => wp_create_nonce( 'xen_admin_nonce' ),
-            'i18n'    => [
+            'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
+            'nonce'       => wp_create_nonce( 'xen_admin_nonce' ),
+            'returnNonce' => wp_create_nonce( 'xen_return_nonce' ),
+            'i18n'        => [
                 'confirmDelete' => __( 'Are you sure you want to delete this log entry?', 'xen-inventory' ),
+                'confirmReturn' => __( 'Mark this item as returned?', 'xen-inventory' ),
                 'saving'        => __( 'Saving…', 'xen-inventory' ),
                 'saved'         => __( 'Saved.', 'xen-inventory' ),
+                'returned'      => __( 'Returned', 'xen-inventory' ),
+                'copied'        => __( 'Copied!', 'xen-inventory' ),
             ],
         ] );
     }

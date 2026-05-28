@@ -1,8 +1,10 @@
 /**
  * XEN Inventory — Admin JavaScript
  *
- * Handles minor admin-side interactions:
- *  - Confirm + AJAX delete of borrow log rows.
+ * Handles:
+ *  - AJAX delete of borrow log rows.
+ *  - AJAX return (close) of open borrow log rows.
+ *  - Copy-to-clipboard for shortcode reference panel.
  *
  * Depends on: jQuery, xenInventoryAdmin (wp_localize_script).
  */
@@ -11,7 +13,10 @@
 ( function ( $ ) {
     'use strict';
 
+    // -----------------------------------------------------------------------
     // Delete a log entry via AJAX.
+    // -----------------------------------------------------------------------
+
     $( document ).on( 'click', '.xen-delete-log', function () {
         if ( ! window.confirm( xenInventoryAdmin.i18n.confirmDelete ) ) {
             return;
@@ -41,6 +46,76 @@
             alert( xenInventoryAdmin.i18n.confirmDelete );
             $btn.prop( 'disabled', false );
         } );
+    } );
+
+    // -----------------------------------------------------------------------
+    // Mark a borrow log entry as returned via AJAX.
+    // -----------------------------------------------------------------------
+
+    $( document ).on( 'click', '.xen-return-log', function () {
+        if ( ! window.confirm( xenInventoryAdmin.i18n.confirmReturn ) ) {
+            return;
+        }
+
+        const $btn  = $( this );
+        const logId = $btn.data( 'log-id' );
+        const orig  = $btn.text();
+
+        $btn.prop( 'disabled', true ).text( xenInventoryAdmin.i18n.saving );
+
+        $.post( xenInventoryAdmin.ajaxUrl, {
+            action:  'xen_return_item',
+            nonce:   xenInventoryAdmin.returnNonce,
+            log_id:  logId,
+            notes:   '',
+        } )
+        .done( function ( response ) {
+            if ( response.success ) {
+                const $row = $btn.closest( 'tr' );
+                // Update the "Returned" cell (7th td, 0-indexed = index 6).
+                $row.find( 'td:eq(6)' ).html(
+                    '<span class="xen-badge xen-badge--returned">' + xenInventoryAdmin.i18n.returned + '</span>'
+                );
+                $btn.remove();
+            } else {
+                alert( response.data ? response.data.message : 'Error.' );
+                $btn.prop( 'disabled', false ).text( orig );
+            }
+        } )
+        .fail( function () {
+            alert( 'Error.' );
+            $btn.prop( 'disabled', false ).text( orig );
+        } );
+    } );
+
+    // -----------------------------------------------------------------------
+    // Copy shortcode to clipboard.
+    // -----------------------------------------------------------------------
+
+    $( document ).on( 'click', '.xen-copy-shortcode', function () {
+        const $btn      = $( this );
+        const shortcode = $btn.data( 'shortcode' );
+        const orig      = $btn.text();
+
+        if ( navigator.clipboard ) {
+            navigator.clipboard.writeText( shortcode ).then( function () {
+                $btn.text( xenInventoryAdmin.i18n.copied ).prop( 'disabled', true );
+                setTimeout( function () {
+                    $btn.text( orig ).prop( 'disabled', false );
+                }, 1500 );
+            } );
+        } else {
+            // Fallback for older browsers.
+            const $tmp = $( '<input>' );
+            $( 'body' ).append( $tmp );
+            $tmp.val( shortcode ).trigger( 'select' );
+            document.execCommand( 'copy' );
+            $tmp.remove();
+            $btn.text( xenInventoryAdmin.i18n.copied ).prop( 'disabled', true );
+            setTimeout( function () {
+                $btn.text( orig ).prop( 'disabled', false );
+            }, 1500 );
+        }
     } );
 
 } )( jQuery );

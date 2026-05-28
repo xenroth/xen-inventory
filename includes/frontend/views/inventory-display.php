@@ -165,4 +165,59 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
         </div>
     </div>
 
+    <!-- My Active Borrows -->
+    <?php
+    $my_borrows = \XenInventory\Models\InventoryLog::get_open_borrows_for_user( get_current_user_id() );
+    if ( ! empty( $my_borrows ) ) :
+    ?>
+    <div class="xen-my-borrows">
+        <h3 class="xen-my-borrows__title"><?php esc_html_e( 'My Active Borrows', 'xen-inventory' ); ?></h3>
+        <div class="xen-borrows-list">
+            <?php foreach ( $my_borrows as $borrow ) :
+                $due_time   = $borrow->date_due ? strtotime( $borrow->date_due ) : null;
+                $is_overdue = $due_time && $due_time < time();
+            ?>
+            <div class="xen-return-row<?php echo $is_overdue ? ' xen-return-row--overdue' : ''; ?>">
+                <div class="xen-return-row__item">
+                    <strong><?php echo esc_html( $borrow->item_title ); ?></strong>
+                    <span class="xen-return-row__qty">
+                        <?php
+                        /* translators: %d: quantity borrowed */
+                        printf( esc_html__( 'Qty: %d', 'xen-inventory' ), (int) $borrow->quantity );
+                        ?>
+                    </span>
+                </div>
+                <div class="xen-return-row__dates">
+                    <span>
+                        <?php
+                        /* translators: %s: date */
+                        printf( esc_html__( 'Borrowed: %s', 'xen-inventory' ), esc_html( wp_date( get_option( 'date_format' ), strtotime( $borrow->date_borrowed ) ) ) );
+                        ?>
+                    </span>
+                    <?php if ( $due_time ) : ?>
+                        <span class="<?php echo $is_overdue ? 'xen-overdue-text' : ''; ?>">
+                            <?php
+                            /* translators: %s: due date */
+                            printf( esc_html__( 'Due: %s', 'xen-inventory' ), esc_html( wp_date( get_option( 'date_format' ), $due_time ) ) );
+                            ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
+                <div class="xen-return-row__actions">
+                    <input
+                        type="text"
+                        class="xen-return-notes"
+                        placeholder="<?php esc_attr_e( 'Return notes (optional)', 'xen-inventory' ); ?>"
+                    />
+                    <button
+                        class="xen-btn xen-btn--secondary xen-return-btn"
+                        data-log-id="<?php echo (int) $borrow->id; ?>"
+                    ><?php esc_html_e( 'Return', 'xen-inventory' ); ?></button>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
 </div><!-- .xen-inventory-wrap -->

@@ -122,4 +122,65 @@ $recent = $wpdb->get_results(
             </table>
         </div>
     <?php endif; ?>
+
+    <!-- Shortcode Reference -->
+    <div class="xen-shortcode-reference">
+        <h2><?php esc_html_e( 'Shortcode Reference', 'xen-inventory' ); ?></h2>
+        <div class="xen-shortcode-cards">
+
+            <div class="xen-shortcode-card">
+                <div class="xen-shortcode-card__header">
+                    <code class="xen-shortcode-card__code">[xen_inventory_display]</code>
+                    <button
+                        class="button button-small xen-copy-shortcode"
+                        data-shortcode="[xen_inventory_display]"
+                    ><?php esc_html_e( 'Copy', 'xen-inventory' ); ?></button>
+                </div>
+                <p class="xen-shortcode-card__desc">
+                    <?php esc_html_e( 'Filterable item grid with borrow modal and active-borrows panel.', 'xen-inventory' ); ?>
+                </p>
+                <p class="xen-shortcode-card__attrs">
+                    <strong><?php esc_html_e( 'Attributes:', 'xen-inventory' ); ?></strong>
+                    <code>department=""</code>
+                    <code>status=""</code>
+                    <code>columns="3"</code>
+                    <code>per_page="20"</code>
+                </p>
+            </div>
+
+            <div class="xen-shortcode-card">
+                <div class="xen-shortcode-card__header">
+                    <code class="xen-shortcode-card__code">[xen_inventory_calendar]</code>
+                    <button
+                        class="button button-small xen-copy-shortcode"
+                        data-shortcode="[xen_inventory_calendar]"
+                    ><?php esc_html_e( 'Copy', 'xen-inventory' ); ?></button>
+                </div>
+                <p class="xen-shortcode-card__desc">
+                    <?php esc_html_e( 'Interactive FullCalendar showing borrow history colour-coded by status.', 'xen-inventory' ); ?>
+                </p>
+                <p class="xen-shortcode-card__attrs">
+                    <?php esc_html_e( 'No required attributes. Control guest access via Settings → Public Calendar.', 'xen-inventory' ); ?>
+                </p>
+            </div>
+
+            <div class="xen-shortcode-card">
+                <div class="xen-shortcode-card__header">
+                    <code class="xen-shortcode-card__code">[xen_inventory_login]</code>
+                    <button
+                        class="button button-small xen-copy-shortcode"
+                        data-shortcode="[xen_inventory_login]"
+                    ><?php esc_html_e( 'Copy', 'xen-inventory' ); ?></button>
+                </div>
+                <p class="xen-shortcode-card__desc">
+                    <?php esc_html_e( 'Branded frontend login form. Redirects to /inventory/ after successful login.', 'xen-inventory' ); ?>
+                </p>
+                <p class="xen-shortcode-card__attrs">
+                    <?php esc_html_e( 'No attributes required.', 'xen-inventory' ); ?>
+                </p>
+            </div>
+
+        </div>
+    </div>
+
 </div>

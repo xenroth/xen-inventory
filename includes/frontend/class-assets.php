@@ -109,10 +109,14 @@ class Assets {
                 'returnNonce' => wp_create_nonce( 'xen_return_nonce' ),
                 'itemsNonce'  => wp_create_nonce( 'xen_items_nonce' ),
                 'i18n'        => [
-                    'borrowSuccess' => __( 'Item borrowed successfully!',  'xen-inventory' ),
-                    'returnSuccess' => __( 'Item returned successfully!',  'xen-inventory' ),
+                    'borrowTitle'   => __( 'Borrow: %s',                       'xen-inventory' ),
+                    'confirmBorrow' => __( 'Confirm Borrow',                   'xen-inventory' ),
+                    'borrowSuccess' => __( 'Item borrowed successfully!',       'xen-inventory' ),
+                    'returnSuccess' => __( 'Item returned successfully!',       'xen-inventory' ),
                     'errorGeneric'  => __( 'An error occurred. Please try again.', 'xen-inventory' ),
-                    'confirm'       => __( 'Are you sure?',                'xen-inventory' ),
+                    'confirm'       => __( 'Are you sure?',                    'xen-inventory' ),
+                    'saving'        => __( 'Saving…',                          'xen-inventory' ),
+                    'available'     => __( 'Available',                        'xen-inventory' ),
                 ],
             ] );
         }

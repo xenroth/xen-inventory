@@ -170,6 +170,33 @@ class InventoryLog {
     }
 
     /**
+     * Get all open (not-returned) borrow log rows for a given user.
+     *
+     * Used to populate the "My Active Borrows" section on the frontend.
+     *
+     * @param  int $user_id WordPress user ID.
+     * @return array<int, object>
+     */
+    public static function get_open_borrows_for_user( int $user_id ): array {
+        global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT l.*, p.post_title AS item_title
+                 FROM ' . self::table() . ' l
+                 INNER JOIN ' . $wpdb->posts . " p ON p.ID = l.item_id
+                 WHERE l.user_id = %d
+                   AND l.action = 'borrowed'
+                   AND l.date_returned IS NULL
+                   AND p.post_status = 'publish'
+                 ORDER BY l.date_borrowed DESC",
+                $user_id
+            )
+        );
+    }
+
+    /**
      * Get all log entries for a single item.
      *
      * @param  int $item_id Post ID.

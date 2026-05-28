@@ -64,6 +64,15 @@ if ( ! defined( 'ABSPATH' ) ) {
                             data-log-id="<?php echo (int) $log->id; ?>"
                             aria-label="<?php esc_attr_e( 'Delete log entry', 'xen-inventory' ); ?>"
                         ><?php esc_html_e( 'Delete', 'xen-inventory' ); ?></button>
+                        <?php if ( ! $log->date_returned ) : ?>
+                            <button
+                                type="button"
+                                class="button button-small button-primary xen-return-log"
+                                data-log-id="<?php echo (int) $log->id; ?>"
+                                aria-label="<?php esc_attr_e( 'Mark as returned', 'xen-inventory' ); ?>"
+                                style="margin-top:2px;"
+                            ><?php esc_html_e( 'Return', 'xen-inventory' ); ?></button>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>

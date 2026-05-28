@@ -85,11 +85,76 @@ class Settings {
                 'label' => __( 'Allow non-logged-in users to view the calendar.', 'xen-inventory' ),
             ]
         );
+
+        // --- Updates section ---
+        add_settings_section(
+            'xen_updates',
+            __( 'Plugin Updates', 'xen-inventory' ),
+            [ $this, 'section_updates_intro' ],
+            'xen-inventory-settings'
+        );
+
+        // Register the token as its own standalone option (not inside the main array)
+        // so it can be stored securely without serialisation in the main settings blob.
+        register_setting(
+            'xen_inventory_settings_group',
+            'xen_inventory_github_token',
+            [
+                'type'              => 'string',
+                'sanitize_callback' => 'sanitize_text_field',
+                'default'           => '',
+            ]
+        );
+
+        add_settings_field(
+            'github_token',
+            __( 'GitHub Personal Access Token', 'xen-inventory' ),
+            [ $this, 'field_github_token' ],
+            'xen-inventory-settings',
+            'xen_updates'
+        );
     }
 
     // -----------------------------------------------------------------------
     // Field renderers
     // -----------------------------------------------------------------------
+
+    /**
+     * Render an intro paragraph for the Updates settings section.
+     *
+     * @return void
+     */
+    public function section_updates_intro(): void {
+        echo '<p class="description">';
+        printf(
+            /* translators: %s: link to GitHub token docs */
+            esc_html__( 'XEN Inventory checks GitHub for new release tags automatically. A Personal Access Token is optional but recommended for sites on shared hosting (GitHub allows 60 unauthenticated requests/hour per IP). %s', 'xen-inventory' ),
+            '<a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create a token →', 'xen-inventory' ) . '</a>'
+        );
+        echo '</p>';
+    }
+
+    /**
+     * Render the GitHub Personal Access Token field.
+     *
+     * @return void
+     */
+    public function field_github_token(): void {
+        $token = get_option( 'xen_inventory_github_token', '' );
+        ?>
+        <input
+            type="password"
+            id="xen_inventory_github_token"
+            name="xen_inventory_github_token"
+            value="<?php echo esc_attr( $token ); ?>"
+            class="regular-text"
+            autocomplete="new-password"
+        />
+        <p class="description">
+            <?php esc_html_e( 'Leave blank to use unauthenticated requests. The token only needs the public_repo scope (or no scope for fully public repositories).', 'xen-inventory' ); ?>
+        </p>
+        <?php
+    }
 
     /**
      * Render a page-selector dropdown field.

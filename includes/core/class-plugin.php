@@ -65,6 +65,7 @@ final class Plugin {
         $this->register_core();
         $this->register_admin();
         $this->register_frontend();
+        $this->register_updater();
     }
 
     /**
@@ -117,5 +118,17 @@ final class Plugin {
         ( new \XenInventory\Frontend\Shortcodes() )->register();
         ( new \XenInventory\Frontend\Assets() )->register();
         ( new \XenInventory\Frontend\TemplateLoader() )->register();
+    }
+
+    /**
+     * Register the GitHub-based auto/manual updater.
+     *
+     * Runs on every request (not just admin) because WP's update transient
+     * can be set by cron (wp-cron.php) which runs outside is_admin().
+     *
+     * @return void
+     */
+    private function register_updater(): void {
+        ( new Updater( XEN_INVENTORY_FILE, XEN_INVENTORY_VERSION ) )->init();
     }
 }

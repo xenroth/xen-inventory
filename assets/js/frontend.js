@@ -119,7 +119,8 @@
 
         const $btn   = $( this );
         const logId  = $btn.data( 'log-id' );
-        const $notes = $btn.closest( '.xen-return-row' ).find( '.xen-return-notes' );
+        const $row   = $btn.closest( '.xen-return-row' );
+        const $notes = $row.find( '.xen-return-notes' );
 
         $btn.prop( 'disabled', true );
 
@@ -131,11 +132,18 @@
         } )
             .done( function ( response ) {
                 if ( response.success ) {
-                    $btn.closest( '.xen-item-card' ).find( '.xen-status-badge' )
-                        .removeClass( 'xen-status-badge--borrowed' )
-                        .addClass( 'xen-status-badge--available' )
-                        .text( 'Available' );
-                    $btn.closest( '.xen-return-row' ).fadeOut();
+                    // Remove the row from "My Active Borrows".
+                    $row.fadeOut( 300, function () { $( this ).remove(); } );
+
+                    // If the return button was also inside an item card (future use),
+                    // update the status badge too.
+                    const $card = $btn.closest( '.xen-item-card' );
+                    if ( $card.length ) {
+                        $card.find( '.xen-status-badge' )
+                            .removeClass( 'xen-status-badge--borrowed' )
+                            .addClass( 'xen-status-badge--available' )
+                            .text( xenInventory.i18n.available || 'Available' );
+                    }
                 } else {
                     alert( response.data.message || xenInventory.i18n.errorGeneric );
                     $btn.prop( 'disabled', false );

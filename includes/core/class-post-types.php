@@ -55,7 +55,7 @@ class PostTypes {
             'public'             => true,
             'publicly_queryable' => true,
             'show_ui'            => true,
-            'show_in_menu'       => true,          // Custom top-level menu added by AdminMenu.
+            'show_in_menu'       => false,         // Managed entirely by AdminMenu — prevents duplicate top-level entry.
             'query_var'          => true,
             'rewrite'            => [ 'slug' => 'inventory-item', 'with_front' => false ],
             'capability_type'    => 'post',
