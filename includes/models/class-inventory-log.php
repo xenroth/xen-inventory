@@ -298,11 +298,12 @@ class InventoryLog {
     }
 
     /**
-     * Return an aggregated summary of all borrowers.
+     * Return an aggregated summary of all borrowers grouped by entity name.
      *
-     * Each row represents one WP user account (grouped by user_id + borrower_name).
-     * The borrower_full_name and borrower_contact are pulled from the most recent
-     * log entry for that user (identified via MAX(id) per group).
+     * Entities are identified by the borrower_full_name entered in the borrow form,
+     * normalised to lower-case so that "John Doe", "john doe", and "JOHN DOE" all
+     * merge into a single row.  The display_name and contact shown are taken from
+     * the most-recent log for that entity.
      *
      * @return array<int, object>
      */
@@ -313,9 +314,8 @@ class InventoryLog {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
         return $wpdb->get_results(
             "SELECT
-                 stats.user_id,
-                 stats.borrower_name,
-                 latest.borrower_full_name,
+                 stats.entity_key,
+                 COALESCE( NULLIF( TRIM( latest.borrower_full_name ), '' ), stats.entity_key ) AS display_name,
                  latest.borrower_contact,
                  stats.total_borrows,
                  stats.active_borrows,
@@ -324,19 +324,43 @@ class InventoryLog {
                  stats.last_borrowed
              FROM (
                  SELECT
-                     user_id,
-                     borrower_name,
-                     COUNT(*)                                                                                                   AS total_borrows,
-                     SUM( CASE WHEN action = 'borrowed' AND date_returned IS NULL THEN 1 ELSE 0 END )                          AS active_borrows,
-                     SUM( CASE WHEN date_returned IS NOT NULL THEN 1 ELSE 0 END )                                              AS returned_borrows,
+                     LOWER( TRIM( COALESCE( NULLIF( TRIM( borrower_full_name ), '' ), NULLIF( TRIM( borrower_name ), '' ), '(unknown)' ) ) ) AS entity_key,
+                     COUNT(*)                                                                                                                 AS total_borrows,
+                     SUM( CASE WHEN action = 'borrowed' AND date_returned IS NULL THEN 1 ELSE 0 END )                                        AS active_borrows,
+                     SUM( CASE WHEN date_returned IS NOT NULL THEN 1 ELSE 0 END )                                                            AS returned_borrows,
                      SUM( CASE WHEN action = 'borrowed' AND date_returned IS NULL AND date_due IS NOT NULL AND date_due < UTC_TIMESTAMP() THEN 1 ELSE 0 END ) AS overdue_borrows,
-                     MAX( date_borrowed )                                                                                       AS last_borrowed,
-                     MAX( id )                                                                                                  AS latest_id
+                     MAX( date_borrowed )                                                                                                     AS last_borrowed,
+                     MAX( id )                                                                                                                AS latest_id
                  FROM {$table}
-                 GROUP BY user_id, borrower_name
+                 GROUP BY entity_key
              ) stats
              LEFT JOIN {$table} latest ON latest.id = stats.latest_id
              ORDER BY stats.last_borrowed DESC"
+        );
+    }
+
+    /**
+     * Get all log entries for a borrower entity (matched by full name, case-insensitive).
+     *
+     * Aggregates records across all WP accounts that used the same borrower_full_name,
+     * making the entity name — not the WP login — the source of truth for borrower identity.
+     *
+     * @param  string $entity_name The borrower_full_name to look up (case-insensitive).
+     * @return array<int, object>
+     */
+    public static function get_logs_for_entity( string $entity_name ): array {
+        global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT l.*, p.post_title AS item_title
+                 FROM " . self::table() . " l
+                 LEFT JOIN " . $wpdb->posts . " p ON p.ID = l.item_id
+                 WHERE LOWER( TRIM( COALESCE( NULLIF( TRIM( l.borrower_full_name ), '' ), NULLIF( TRIM( l.borrower_name ), '' ), '(unknown)' ) ) ) = LOWER( %s )
+                 ORDER BY l.date_borrowed DESC",
+                $entity_name
+            )
         );
     }
 

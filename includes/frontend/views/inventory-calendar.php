@@ -22,8 +22,10 @@ if ( ! defined( 'ABSPATH' ) ) {
         </p>
     </div>
 
-    <!-- FullCalendar mounts here. -->
-    <div id="xen-fullcalendar"></div>
+    <!-- FullCalendar mounts here (wrapped for external scrollbar). -->
+    <div class="xen-calendar-scroller">
+        <div id="xen-fullcalendar"></div>
+    </div>
 
     <!-- Event detail popover (filled via JS on event click). -->
     <div class="xen-event-popover" id="xen-event-popover" hidden role="tooltip">

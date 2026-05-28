@@ -5,6 +5,72 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.5.4 — 2026-05-28 =
+------------------------------------------------------------------------------
+
+== Changed ==
+
+* [Borrowers] Entity-based identity — borrowers are now identified and grouped
+  by the name entered in the borrow form (borrower_full_name), not by the WP
+  account that performed the action.  Names are merged case-insensitively so
+  "John Doe", "john doe", and "JOHN DOE" all resolve to the same entity.
+  The detail view (previously linked by ?xen_borrower_id=) now uses the entity
+  name as the key (?xen_entity=).
+
+* [Borrowers] Detail view no longer shows a single WP account as the subject.
+  The heading is the entity name; an "Associated WP Accounts" block below lists
+  every WP login that ever borrowed under that name (informational only).
+
+* [Model] get_borrowers_summary() — rewritten to GROUP BY a normalised entity
+  key derived from LOWER(COALESCE(borrower_full_name, borrower_name)) instead
+  of user_id + borrower_name.  Returns entity_key, display_name, and contact
+  from the most-recent log row per entity.
+
+== Added ==
+
+* [Model] get_logs_for_entity(string $entity_name) — fetches all borrow log
+  rows where the normalised borrower_full_name matches the supplied entity name
+  (case-insensitive LOWER() comparison).
+
+* [Admin/Borrowers] Live search bar on the list view — instantly filters rows
+  by entity name or contact without a page reload.
+
+* [Admin/Borrowers] Entity avatar — a colour-initial circle (first letter of
+  the entity name) now appears next to every row and on the detail header.
+
+* [Admin/Borrowers] Stat cards on the detail view — Total / Active / Overdue /
+  Returned shown as modern cards above the history table.
+
+== Fixed ==
+
+* [Calendar] Scrollbar now appears outside the calendar border.
+  Added a .xen-calendar-scroller wrapper with overflow-x: auto and moved the
+  border/background there.  #xen-fullcalendar has no border of its own and a
+  min-width of 580 px so it scrolls horizontally on narrow viewports instead
+  of collapsing internally.
+
+* [Calendar] Calendar cells and typography scaled down for a more compact
+  appearance.  FullCalendar elements (toolbar title, column headers, day
+  numbers, event chips) are overridden via scoped CSS to use smaller sizes
+  (~80 % of defaults).  Cell min-height reduced to 4.75 rem.
+
+== UI / Design ==
+
+* Calendar toolbar re-styled: card-style container with surface background and
+  border; smaller title font; reduced legend dot size.
+
+* Borrowers list table: column widths rationalised; entity column now shows the
+  avatar + name without a redundant WP account column.  Stats columns use
+  colour-coded badges / greyed zeros.
+
+* Borrowers detail view: modern gradient avatar, large entity name heading,
+  contact row with icon, stats strip, associated-accounts pill list, and a
+  count-tagged section heading above the history table.
+
+* Scrollbar in .xen-calendar-scroller styled thin (6 px, rounded thumb) via
+  scrollbar-width + ::-webkit-scrollbar rules.
+
+------------------------------------------------------------------------------
 = 1.5.3 — 2026-05-29 =
 ------------------------------------------------------------------------------
 

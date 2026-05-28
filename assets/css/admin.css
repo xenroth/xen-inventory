@@ -141,47 +141,352 @@
 }
 
 /* ==========================================================================
-   Borrower Profile Card
+   Borrowers Page — Entity-based (v1.5.4)
    ========================================================================== */
 
-.xen-borrower-profile {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 1.25rem 1.5rem;
-    margin: 1rem 0 1.5rem;
-    max-width: 680px;
+.xen-borrowers-wrap {
+    max-width: 1200px;
 }
 
-.xen-borrower-profile__row {
+/* Page header — list view */
+.xen-borrowers-page-header {
     display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 1rem;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #f1f5f9;
-    align-items: baseline;
+    margin-bottom: 1.5rem;
 }
 
-.xen-borrower-profile__row:last-child {
-    border-bottom: none;
+.xen-borrowers-page-header__title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    line-height: 1.2;
 }
 
-.xen-borrower-profile__label {
-    flex: 0 0 160px;
-    font-weight: 600;
+.xen-borrowers-page-header__sub {
     font-size: 0.8125rem;
     color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    margin: 0;
 }
 
-.xen-borrower-profile__value {
+.xen-entity-count-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #e0e7ff;
+    color: #3730a3;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 9999px;
+    padding: 0.1rem 0.625rem;
+    letter-spacing: 0.02em;
+    line-height: 1.5;
+}
+
+/* Search / filter toolbar */
+.xen-borrowers-toolbar {
+    margin: 0 0 1rem;
+}
+
+.xen-borrowers-search {
+    width: 100%;
+    max-width: 360px;
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    color: #1e293b;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 0.625rem center;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+    outline: none;
+}
+.xen-borrowers-search:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* Table wrapper (horizontal scroll on narrow screens) */
+.xen-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.xen-table-wrap > .wp-list-table {
+    border: none;
+    border-radius: 0;
+    margin: 0;
+}
+
+/* Column widths */
+.xen-borrowers-table .xen-col-entity  { width: 28%; }
+.xen-borrowers-table .xen-col-contact { width: 20%; }
+.xen-borrowers-table .xen-col-stat    { width: 7%;  }
+.xen-borrowers-table .xen-col-date    { width: 12%; }
+.xen-borrowers-table .xen-col-actions { width: 10%; }
+
+/* Entity avatar (initial circle) */
+.xen-entity-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: #fff;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    letter-spacing: 0.01em;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.35);
+}
+
+.xen-entity-avatar--sm {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.875rem;
+    box-shadow: 0 1px 4px rgba(99, 102, 241, 0.25);
+}
+
+/* Entity name cell in list table */
+.xen-entity-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.xen-entity-primary {
     font-size: 0.9375rem;
+    color: #0f172a;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.xen-contact-cell,
+.xen-date-cell {
+    font-size: 0.8125rem;
+    color: #475569;
+}
+
+.xen-zero {
+    color: #cbd5e1;
+    font-size: 0.875rem;
+}
+
+.xen-btn-history {
+    white-space: nowrap;
+    font-size: 0.8rem !important;
+}
+
+/* ==========================================================================
+   Borrower Detail View — entity header
+   ========================================================================== */
+
+.xen-borrower-detail-header {
+    margin-bottom: 1.5rem;
+}
+
+.xen-borrower-detail-header__back {
+    margin-bottom: 1.25rem;
+}
+
+.xen-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: #475569;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 150ms ease;
+}
+.xen-back-btn:hover {
+    color: #4f46e5;
+}
+.xen-back-btn svg {
+    flex-shrink: 0;
+}
+
+.xen-borrower-detail-header__title-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.xen-borrower-detail-header__name {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.xen-borrower-detail-header__contact {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0;
+}
+.xen-borrower-detail-header__contact svg {
+    flex-shrink: 0;
+    color: #94a3b8;
+}
+
+/* Stats row */
+.xen-entity-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.875rem;
+    margin-bottom: 1.5rem;
+}
+
+.xen-entity-stat {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.875rem 1.25rem;
+    min-width: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.xen-entity-stat--active  { border-left: 3px solid #dc2626; }
+.xen-entity-stat--overdue { border-left: 3px solid #d97706; background: #fffbeb; }
+.xen-entity-stat--returned { border-left: 3px solid #16a34a; }
+
+.xen-entity-stat__number {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #0f172a;
+}
+
+.xen-entity-stat__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+}
+
+/* Associated WP Accounts block */
+.xen-entity-accounts {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.875rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.xen-entity-accounts__heading {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #64748b;
+    margin: 0 0 0.625rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+.xen-entity-accounts__heading svg { color: #94a3b8; flex-shrink: 0; }
+
+.xen-entity-accounts__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.xen-entity-account-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    padding: 0.2rem 0.75rem;
+    font-size: 0.8125rem;
     color: #1e293b;
 }
+.xen-entity-account-chip strong { font-weight: 600; }
 
-.xen-borrower-stats { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+/* Section heading with count badge */
+.xen-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+}
+
+.xen-section-heading h2 {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    margin: 0;
+    color: #0f172a;
+}
+
+.xen-section-heading__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 9999px;
+    padding: 0.05rem 0.5rem;
+    line-height: 1.5;
+}
+
+/* Notes cell — truncate long text */
+.xen-notes-cell {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+/* Empty state */
+.xen-empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #94a3b8;
+}
+.xen-empty-state svg {
+    margin: 0 auto 0.875rem;
+    display: block;
+    opacity: 0.4;
+}
+.xen-empty-state p {
+    font-size: 0.9375rem;
+    color: #64748b;
+    margin: 0;
+}
 
 .xen-text-muted { color: #94a3b8; font-size: 0.8125rem; }
+.xen-borrower-stats { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+
 
 /* ==========================================================================
    Shortcode Reference Panel
