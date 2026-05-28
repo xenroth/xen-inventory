@@ -71,6 +71,7 @@ class AjaxHandlers {
         $notes              = sanitize_textarea_field( $_POST['notes']           ?? '' );
         $borrower_full_name = sanitize_text_field( $_POST['borrower_full_name'] ?? '' );
         $borrower_contact   = sanitize_text_field( $_POST['borrower_contact']   ?? '' );
+        $borrow_tags        = sanitize_text_field( $_POST['borrow_tags']        ?? '' );
 
         if ( ! $item_id ) {
             wp_send_json_error( [ 'message' => __( 'Invalid item.', 'xen-inventory' ) ], 400 );
@@ -117,6 +118,7 @@ class AjaxHandlers {
             'borrower_name'      => wp_get_current_user()->display_name,
             'borrower_full_name' => $borrower_full_name,
             'borrower_contact'   => $borrower_contact,
+            'borrow_tags'        => $borrow_tags,
             'action'             => 'borrowed',
             'quantity'           => $quantity,
             'date_borrowed'      => current_time( 'mysql', true ), // UTC.

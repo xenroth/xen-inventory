@@ -216,6 +216,20 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                 </div>
 
                 <div class="xen-form__group">
+                    <label for="xen-borrow-tags">
+                        <?php esc_html_e( 'Purpose / Tags', 'xen-inventory' ); ?>
+                        <span class="xen-form__optional"><?php esc_html_e( '(optional)', 'xen-inventory' ); ?></span>
+                    </label>
+                    <input
+                        type="text"
+                        id="xen-borrow-tags"
+                        name="borrow_tags"
+                        placeholder="<?php esc_attr_e( 'e.g. IT Conference, Zone B, Annual Event', 'xen-inventory' ); ?>"
+                    />
+                    <p class="xen-form__hint"><?php esc_html_e( 'Separate multiple tags with commas.', 'xen-inventory' ); ?></p>
+                </div>
+
+                <div class="xen-form__group">
                     <label for="xen-borrow-quantity"><?php esc_html_e( 'Quantity', 'xen-inventory' ); ?></label>
                     <input type="number" id="xen-borrow-quantity" name="quantity" value="1" min="1" required />
                 </div>

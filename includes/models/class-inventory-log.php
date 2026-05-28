@@ -47,6 +47,7 @@ class InventoryLog {
             'borrower_name'      => '',
             'borrower_full_name' => '',
             'borrower_contact'   => '',
+            'borrow_tags'        => '',
             'action'             => 'borrowed',
             'quantity'           => 1,
             'date_borrowed'      => current_time( 'mysql', true ),
@@ -57,7 +58,7 @@ class InventoryLog {
 
         $data = wp_parse_args( $data, $defaults );
 
-        $formats = [ '%d', '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s' ];
+        $formats = [ '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s' ];
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $inserted = $wpdb->insert( self::table(), $data, $formats );

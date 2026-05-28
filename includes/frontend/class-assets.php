@@ -49,8 +49,8 @@ class Assets {
             || has_shortcode( $post->post_content, 'xen_inventory_login' )
         );
 
-        // Bail if neither a shortcode page nor a XEN rewrite view.
-        if ( ! $has_xen_shortcode && ! $xen_view ) {
+        // Bail if neither a shortcode page nor a XEN rewrite view nor a single item page.
+        if ( ! $has_xen_shortcode && ! $xen_view && ! is_singular( 'xen_item' ) ) {
             return;
         }
 
@@ -103,7 +103,8 @@ class Assets {
 
         // Inventory display / borrow JS.
         $needs_frontend_js = ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'xen_inventory_display' ) )
-            || 'borrow' === $xen_view;
+            || 'borrow' === $xen_view
+            || is_singular( 'xen_item' );
 
         if ( $needs_frontend_js ) {
             wp_enqueue_script(

@@ -123,6 +123,20 @@ get_header();
                     </div>
 
                     <div class="xen-form__group">
+                        <label for="xen-bp-tags">
+                            <?php esc_html_e( 'Purpose / Tags', 'xen-inventory' ); ?>
+                            <span class="xen-form__optional"><?php esc_html_e( '(optional)', 'xen-inventory' ); ?></span>
+                        </label>
+                        <input
+                            type="text"
+                            id="xen-bp-tags"
+                            name="borrow_tags"
+                            placeholder="<?php esc_attr_e( 'e.g. IT Conference, Zone B, Annual Event', 'xen-inventory' ); ?>"
+                        />
+                        <p class="xen-form__hint"><?php esc_html_e( 'Separate multiple tags with commas.', 'xen-inventory' ); ?></p>
+                    </div>
+
+                    <div class="xen-form__group">
                         <label for="xen-bp-quantity"><?php esc_html_e( 'Quantity', 'xen-inventory' ); ?></label>
                         <input
                             type="number"

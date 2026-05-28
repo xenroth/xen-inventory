@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     <!-- FullCalendar mounts here. -->
     <div id="xen-fullcalendar"></div>
 
-    <!-- Event detail popover (filled via JS). -->
+    <!-- Event detail popover (filled via JS on event click). -->
     <div class="xen-event-popover" id="xen-event-popover" hidden role="tooltip">
         <button class="xen-event-popover__close" id="xen-popover-close" aria-label="<?php esc_attr_e( 'Close', 'xen-inventory' ); ?>">&times;</button>
         <dl class="xen-event-popover__dl">
@@ -34,5 +34,19 @@ if ( ! defined( 'ABSPATH' ) ) {
             <dt><?php esc_html_e( 'Quantity', 'xen-inventory' ); ?></dt><dd id="xen-pop-qty"></dd>
             <dt><?php esc_html_e( 'Notes',    'xen-inventory' ); ?></dt><dd id="xen-pop-notes"></dd>
         </dl>
+    </div>
+
+    <!-- Day detail modal (filled via JS on date cell click). -->
+    <div class="xen-day-modal" id="xen-day-modal" hidden role="dialog" aria-modal="true" aria-labelledby="xen-day-modal-title">
+        <div class="xen-day-modal__backdrop"></div>
+        <div class="xen-day-modal__panel">
+            <div class="xen-day-modal__header">
+                <h3 class="xen-day-modal__title" id="xen-day-modal-title"></h3>
+                <button class="xen-day-modal__close" id="xen-day-modal-close" aria-label="<?php esc_attr_e( 'Close', 'xen-inventory' ); ?>">&times;</button>
+            </div>
+            <div class="xen-day-modal__body" id="xen-day-modal-body">
+                <!-- Populated by JS -->
+            </div>
+        </div>
     </div>
 </div>

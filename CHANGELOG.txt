@@ -5,6 +5,47 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.5.1 — 2026-05-28 =
+------------------------------------------------------------------------------
+
+== New Features ==
+
+* Single item detail page (WooCommerce-style product page).
+  Clicking an item card image or title now navigates to a dedicated detail
+  page at /inventory-item/{slug}/ instead of a generic WordPress template.
+  - Two-column layout (sticky gallery image on the left, product info on the
+    right) collapses to single-column on mobile.
+  - Breadcrumb navigation: Inventory › Department › Item Name.
+  - Large hero image with aspect-ratio 1/1, rounded corners, and drop shadow.
+    SVG placeholder icon shown when no featured image is set.
+  - Status badge (Available / Borrowed / Maintenance) overlaid top-left of
+    the image, mirroring the card badge style.
+  - Department, stock counter, and full rich-text item description displayed.
+  - "Borrow This Item" CTA button (full width) triggers the borrow modal,
+    or shows a disabled state for maintenance / out-of-stock items.
+  - Guests see a "Login to Borrow" link instead of the borrow button.
+  - Template is theme-overridable: place
+    {theme}/xen-inventory/page-item.php to customise.
+
+* Purpose / Tags field on borrow forms.
+  Both the inline modal and the standalone /inventory/borrow/ page now include
+  an optional "Purpose / Tags" text field for free-form keywords (e.g.
+  "IT Conference", "Zone B", "Annual Event"). Comma-separated tags are stored
+  in a new `borrow_tags` database column and will be visible in the borrow
+  log admin. Existing installs are upgraded automatically via
+  `Activator::maybe_upgrade()` (dbDelta — safe, additive).
+
+* Calendar day-click borrow list modal.
+  Clicking any date cell on the FullCalendar now opens a slide-up modal
+  listing every borrow event that overlaps that day.
+  - Each row shows: item name, borrower, quantity badge, date range pill,
+    and a colour-coded Active/Returned status chip.
+  - Scrollable body handles days with many events.
+  - Fully responsive: bottom-sheet on mobile (≤40 px), centred dialog on
+    desktop. Dismissible via close button, backdrop click, or Escape key.
+  - Opening a day modal closes any open event popover, and vice versa.
+
+------------------------------------------------------------------------------
 = 1.5.0 — 2026-05-28 =
 ------------------------------------------------------------------------------
 

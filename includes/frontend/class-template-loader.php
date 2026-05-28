@@ -36,6 +36,18 @@ class TemplateLoader {
      * @return string
      */
     public function maybe_load_xen_template( string $template ): string {
+        // Single item detail page — intercept before checking xen_view.
+        if ( is_singular( 'xen_item' ) ) {
+            $theme_override = locate_template( 'xen-inventory/page-item.php' );
+            if ( $theme_override ) {
+                return $theme_override;
+            }
+            $plugin_template = XEN_INVENTORY_PATH . 'includes/frontend/views/page-item.php';
+            if ( file_exists( $plugin_template ) ) {
+                return $plugin_template;
+            }
+        }
+
         $view = get_query_var( 'xen_view' );
 
         if ( empty( $view ) ) {

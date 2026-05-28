@@ -85,6 +85,7 @@
             item_id:             $itemId.val(),
             borrower_full_name:  $form.find( '[name="borrower_full_name"]' ).val(),
             borrower_contact:    $form.find( '[name="borrower_contact"]' ).val(),
+            borrow_tags:         $form.find( '[name="borrow_tags"]' ).val(),
             quantity:            $form.find( '[name="quantity"]' ).val(),
             date_due:            $form.find( '[name="date_due"]' ).val(),
             notes:               $form.find( '[name="notes"]' ).val(),

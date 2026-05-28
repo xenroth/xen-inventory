@@ -72,6 +72,7 @@ class Activator {
             borrower_name      VARCHAR(200)        NOT NULL DEFAULT '',
             borrower_full_name VARCHAR(200)        NOT NULL DEFAULT '',
             borrower_contact   VARCHAR(200)        NOT NULL DEFAULT '',
+            borrow_tags        VARCHAR(500)        NOT NULL DEFAULT '',
             action             VARCHAR(50)         NOT NULL DEFAULT 'borrowed',
             quantity      INT(11) UNSIGNED    NOT NULL DEFAULT 1,
             date_borrowed DATETIME            NOT NULL DEFAULT '0000-00-00 00:00:00',
