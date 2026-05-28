@@ -52,9 +52,6 @@ class Updater {
     // How long to cache the GitHub API response (12 hours).
     private const CACHE_TTL = 12 * HOUR_IN_SECONDS;
 
-    // Option key for the optional GitHub Personal Access Token.
-    private const TOKEN_OPTION = 'xen_inventory_github_token';
-
     /** @var string  "plugin-folder/plugin-file.php" plugin basename. */
     private string $plugin_file;
 
@@ -363,12 +360,6 @@ class Updater {
             'timeout'    => 10,
             'user-agent' => 'XenInventory/' . $this->version . '; WordPress/' . get_bloginfo( 'version' ) . '; ' . home_url(),
         ];
-
-        // Optional Personal Access Token for higher rate limits.
-        $token = get_option( self::TOKEN_OPTION, '' );
-        if ( $token ) {
-            $args['headers']['Authorization'] = 'Bearer ' . sanitize_text_field( $token );
-        }
 
         $response = wp_remote_get( self::GITHUB_API, $args );
 
