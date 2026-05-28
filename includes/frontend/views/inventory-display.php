@@ -64,25 +64,37 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                 $item_status   = get_post_meta( get_the_ID(), '_xen_item_status',   true ) ?: 'available';
                 $total_qty     = (int) get_post_meta( get_the_ID(), '_xen_total_quantity', true );
                 $item_depts    = get_the_terms( get_the_ID(), 'xen_department' );
+                $available_qty = \XenInventory\Models\InventoryLog::get_available_quantity( get_the_ID() );
+                $item_excerpt  = get_the_excerpt();
                 ?>
 
                 <article class="xen-item-card xen-item-card--<?php echo esc_attr( $item_status ); ?>">
 
-                    <?php if ( has_post_thumbnail() ) : ?>
-                        <div class="xen-item-card__image">
-                            <?php the_post_thumbnail( 'medium' ); ?>
-                        </div>
-                    <?php endif; ?>
-
-                    <div class="xen-item-card__body">
+                    <!-- Image with overlaid status badge -->
+                    <div class="xen-item-card__image-wrap">
+                        <?php if ( has_post_thumbnail() ) : ?>
+                            <a href="<?php the_permalink(); ?>" tabindex="-1" aria-hidden="true">
+                                <?php the_post_thumbnail( 'medium', [ 'class' => 'xen-item-card__img' ] ); ?>
+                            </a>
+                        <?php else : ?>
+                            <a href="<?php the_permalink(); ?>" tabindex="-1" aria-hidden="true" class="xen-item-card__placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" aria-hidden="true" focusable="false">
+                                    <rect x="14" y="10" width="52" height="8" rx="2" fill="currentColor" opacity=".35"/>
+                                    <rect x="18" y="22" width="44" height="38" rx="3" fill="currentColor" opacity=".18"/>
+                                    <rect x="30" y="22" width="20" height="16" rx="1" fill="currentColor" opacity=".4"/>
+                                    <circle cx="24" cy="66" r="5" fill="currentColor" opacity=".35"/>
+                                    <circle cx="56" cy="66" r="5" fill="currentColor" opacity=".35"/>
+                                    <rect x="19" y="62" width="42" height="6" rx="1" fill="currentColor" opacity=".18"/>
+                                </svg>
+                            </a>
+                        <?php endif; ?>
 
                         <span class="xen-status-badge xen-status-badge--<?php echo esc_attr( $item_status ); ?>">
                             <?php echo esc_html( ucfirst( $item_status ) ); ?>
                         </span>
+                    </div><!-- .xen-item-card__image-wrap -->
 
-                        <h3 class="xen-item-card__title">
-                            <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-                        </h3>
+                    <div class="xen-item-card__body">
 
                         <?php if ( $item_depts && ! is_wp_error( $item_depts ) ) : ?>
                             <p class="xen-item-card__dept">
@@ -90,20 +102,52 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                             </p>
                         <?php endif; ?>
 
-                        <p class="xen-item-card__qty">
-                            <?php
-                            /* translators: %d: total quantity */
-                            printf( esc_html__( 'Qty: %d', 'xen-inventory' ), $total_qty );
-                            ?>
+                        <h3 class="xen-item-card__title">
+                            <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                        </h3>
+
+                        <p class="xen-item-card__desc">
+                            <?php echo esc_html( $item_excerpt ?: __( 'A managed inventory item available for staff borrowing.', 'xen-inventory' ) ); ?>
                         </p>
 
-                        <?php if ( 'available' === $item_status && current_user_can( 'xen_borrow_items' ) ) : ?>
+                        <div class="xen-item-card__stock">
+                            <?php if ( $available_qty > 0 ) : ?>
+                                <span class="xen-item-card__stock-in">
+                                    <?php
+                                    /* translators: %d: available quantity */
+                                    printf( esc_html__( '%d available', 'xen-inventory' ), $available_qty );
+                                    ?>
+                                </span>
+                            <?php else : ?>
+                                <span class="xen-item-card__stock-out">
+                                    <?php esc_html_e( 'Out of stock', 'xen-inventory' ); ?>
+                                </span>
+                            <?php endif; ?>
+                            <?php if ( $total_qty ) : ?>
+                                <span class="xen-item-card__stock-total">
+                                    <?php
+                                    /* translators: %d: total quantity */
+                                    printf( esc_html__( '/ %d total', 'xen-inventory' ), $total_qty );
+                                    ?>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php if ( $available_qty > 0 && current_user_can( 'xen_borrow_items' ) ) : ?>
                             <button
-                                class="xen-btn xen-btn--primary xen-borrow-btn"
+                                class="xen-btn xen-btn--primary xen-borrow-btn xen-item-card__cta"
                                 data-item-id="<?php echo (int) get_the_ID(); ?>"
                                 data-item-title="<?php echo esc_attr( get_the_title() ); ?>"
                             >
                                 <?php esc_html_e( 'Borrow', 'xen-inventory' ); ?>
+                            </button>
+                        <?php elseif ( 'maintenance' === $item_status ) : ?>
+                            <button class="xen-btn xen-item-card__cta xen-item-card__cta--maintenance" disabled>
+                                <?php esc_html_e( 'Under Maintenance', 'xen-inventory' ); ?>
+                            </button>
+                        <?php else : ?>
+                            <button class="xen-btn xen-item-card__cta xen-item-card__cta--unavailable" disabled>
+                                <?php esc_html_e( 'Unavailable', 'xen-inventory' ); ?>
                             </button>
                         <?php endif; ?>
 

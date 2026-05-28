@@ -5,6 +5,30 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.3.0 — 2026-05-28 =
+------------------------------------------------------------------------------
+
+== Improvements ==
+
+* Inventory item cards redesigned to a WooCommerce-style product card layout.
+  - Square image area with `aspect-ratio: 1/1` and a smooth scale-on-hover
+    effect. Falls back to an inline SVG placeholder (package icon) when no
+    featured image is set — no external image service required.
+  - Status badge (Available / Borrowed / Maintenance) is now overlaid on the
+    top-right corner of the image, matching a WooCommerce sale ribbon.
+  - Department displayed as a small uppercase category line above the title,
+    styled in the primary brand colour.
+  - Item excerpt shown below the title, clamped to 2 lines. Falls back to a
+    generic description string when no excerpt is set.
+  - Live availability counter (e.g. "3 available / 5 total") replaces the
+    static "Qty:" label, using real-time data from the borrow log.
+  - CTA button (Borrow / Unavailable / Under Maintenance) is now full-width at
+    the bottom of the card, matching the WooCommerce "Add to Cart" pattern.
+    Disabled states use distinct muted / warning colours.
+  - Subtle card lift (`translateY(-3px)`) on hover replaces the plain
+    box-shadow change.
+
+------------------------------------------------------------------------------
 = 1.2.0 — 2026-05-28 =
 ------------------------------------------------------------------------------
 
