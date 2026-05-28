@@ -234,40 +234,61 @@ class InventoryLog {
             return [];
         }
 
+        // Overlap logic: fetch any borrow event whose period intersects the
+        // requested date range, not just events that *started* in the range.
+        //
+        // An event overlaps [range_start, range_end] when:
+        //   date_borrowed  <= range_end
+        //   AND (date_returned >= range_start OR date_returned IS NULL)
+        //
+        // This ensures that active borrows which started *before* the current
+        // calendar view still appear as spanning events.
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $rows = $wpdb->get_results(
             $wpdb->prepare(
                 'SELECT l.*, p.post_title AS item_title
                  FROM ' . self::table() . ' l
                  INNER JOIN ' . $wpdb->posts . " p ON p.ID = l.item_id
-                 WHERE l.date_borrowed BETWEEN %s AND %s
+                 WHERE l.date_borrowed <= %s
+                   AND ( l.date_returned >= %s OR l.date_returned IS NULL )
+                   AND l.action = 'borrowed'
                    AND p.post_status = 'publish'
                  ORDER BY l.date_borrowed ASC",
-                $start . ' 00:00:00',
-                $end   . ' 23:59:59'
+                $end   . ' 23:59:59',
+                $start . ' 00:00:00'
             )
         );
 
         $events = [];
+        $now    = current_time( 'mysql', true ); // UTC.
 
         foreach ( $rows as $row ) {
-            $color    = 'borrowed' === $row->action ? '#e74c3c' : '#27ae60';
+            $color = 'returned' === $row->action ? '#27ae60' : '#e74c3c';
+
+            // Use date_returned if available, date_due as fallback, current time
+            // as a last resort so ongoing borrows span correctly to "today".
+            $event_end = $row->date_returned ?? ( $row->date_due ?? $now );
+
             $events[] = [
                 'id'    => (int) $row->id,
                 'title' => sprintf(
                     /* translators: 1: item title, 2: borrower name */
                     _x( '%1$s — %2$s', 'Calendar event title', 'xen-inventory' ),
-                    esc_html( $row->item_title ),
-                    esc_html( $row->borrower_name )
+                    $row->item_title,
+                    $row->borrower_full_name ?: $row->borrower_name
                 ),
                 'start' => $row->date_borrowed,
-                'end'   => $row->date_returned ?? $row->date_due,
+                'end'   => $event_end,
                 'color' => $color,
                 'extendedProps' => [
-                    'item_id'  => (int) $row->item_id,
-                    'action'   => $row->action,
-                    'quantity' => (int) $row->quantity,
-                    'notes'    => $row->notes,
+                    'item_id'       => (int) $row->item_id,
+                    'item_title'    => $row->item_title,
+                    'borrower'      => $row->borrower_full_name ?: $row->borrower_name,
+                    'action'        => $row->action,
+                    'quantity'      => (int) $row->quantity,
+                    'notes'         => $row->notes,
+                    'date_returned' => $row->date_returned,
                 ],
             ];
         }

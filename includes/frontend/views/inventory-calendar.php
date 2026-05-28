@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         <button class="xen-event-popover__close" id="xen-popover-close" aria-label="<?php esc_attr_e( 'Close', 'xen-inventory' ); ?>">&times;</button>
         <dl class="xen-event-popover__dl">
             <dt><?php esc_html_e( 'Item',     'xen-inventory' ); ?></dt><dd id="xen-pop-item"></dd>
-            <dt><?php esc_html_e( 'Action',   'xen-inventory' ); ?></dt><dd id="xen-pop-action"></dd>
+            <dt><?php esc_html_e( 'Borrower', 'xen-inventory' ); ?></dt><dd id="xen-pop-action"></dd>
             <dt><?php esc_html_e( 'Quantity', 'xen-inventory' ); ?></dt><dd id="xen-pop-qty"></dd>
             <dt><?php esc_html_e( 'Notes',    'xen-inventory' ); ?></dt><dd id="xen-pop-notes"></dd>
         </dl>

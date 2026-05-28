@@ -4,7 +4,7 @@ Tags:               inventory, management, borrow, tracking, departments
 Requires at least:  6.0
 Tested up to:       6.7
 Requires PHP:       8.0
-Stable tag:         1.4.0
+Stable tag:         1.5.0
 License:            GPLv2 or later
 License URI:        https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -114,6 +114,10 @@ entries remain untouched. Data is only removed when you **delete** the plugin
 and confirm the uninstall action.
 
 == Changelog ==
+
+= 1.5.0 — 2026-05-28 =
+* Bug fixes for the inventory calendar.
+* See CHANGELOG.txt for full details.
 
 = 1.4.0 — 2026-05-28 =
 * Borrower identity fields added to borrow forms and new Borrowers admin page.

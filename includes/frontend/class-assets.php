@@ -37,17 +37,19 @@ class Assets {
     public function enqueue(): void {
         global $post;
 
-        if ( ! is_a( $post, 'WP_Post' ) ) {
-            return;
-        }
-
-        $has_xen_shortcode = has_shortcode( $post->post_content, 'xen_inventory_display' )
-            || has_shortcode( $post->post_content, 'xen_inventory_calendar' )
-            || has_shortcode( $post->post_content, 'xen_inventory_login' );
-
-        // Also load on XEN custom rewrite views.
+        // Determine whether this is a XEN rewrite view (e.g. /inventory/calendar/).
+        // Must be resolved BEFORE the $post guard because rewrite-view requests
+        // have no associated WP post object.
         $xen_view = get_query_var( 'xen_view' );
 
+        // Whether a XEN shortcode is present on the current page post.
+        $has_xen_shortcode = is_a( $post, 'WP_Post' ) && (
+            has_shortcode( $post->post_content, 'xen_inventory_display' )
+            || has_shortcode( $post->post_content, 'xen_inventory_calendar' )
+            || has_shortcode( $post->post_content, 'xen_inventory_login' )
+        );
+
+        // Bail if neither a shortcode page nor a XEN rewrite view.
         if ( ! $has_xen_shortcode && ! $xen_view ) {
             return;
         }
@@ -60,8 +62,11 @@ class Assets {
             XEN_INVENTORY_VERSION
         );
 
-        // FullCalendar (from CDN — swap for local copy if needed).
-        if ( has_shortcode( $post->post_content, 'xen_inventory_calendar' ) || 'calendar' === $xen_view ) {
+        // FullCalendar — loaded for the calendar shortcode and the /inventory/calendar/ view.
+        $needs_calendar = ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'xen_inventory_calendar' ) )
+            || 'calendar' === $xen_view;
+
+        if ( $needs_calendar ) {
             wp_enqueue_style(
                 'fullcalendar',
                 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css',
@@ -85,16 +90,22 @@ class Assets {
                 true
             );
 
+            // Convert WordPress locale (en_US) to BCP 47 format (en-US) expected by FullCalendar.
+            $fc_locale = str_replace( '_', '-', get_locale() );
+
             wp_localize_script( 'xen-inventory-calendar', 'xenCalendar', [
-                'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
-                'nonce'     => wp_create_nonce( 'xen_calendar_nonce' ),
-                'locale'    => get_locale(),
-                'firstDay'  => (int) get_option( 'start_of_week' ),
+                'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
+                'nonce'    => wp_create_nonce( 'xen_calendar_nonce' ),
+                'locale'   => $fc_locale,
+                'firstDay' => (int) get_option( 'start_of_week' ),
             ] );
         }
 
         // Inventory display / borrow JS.
-        if ( has_shortcode( $post->post_content, 'xen_inventory_display' ) || 'borrow' === $xen_view ) {
+        $needs_frontend_js = ( is_a( $post, 'WP_Post' ) && has_shortcode( $post->post_content, 'xen_inventory_display' ) )
+            || 'borrow' === $xen_view;
+
+        if ( $needs_frontend_js ) {
             wp_enqueue_script(
                 'xen-inventory-frontend',
                 XEN_INVENTORY_ASSETS_URL . 'js/frontend.js',
@@ -109,14 +120,14 @@ class Assets {
                 'returnNonce' => wp_create_nonce( 'xen_return_nonce' ),
                 'itemsNonce'  => wp_create_nonce( 'xen_items_nonce' ),
                 'i18n'        => [
-                    'borrowTitle'   => __( 'Borrow: %s',                       'xen-inventory' ),
-                    'confirmBorrow' => __( 'Confirm Borrow',                   'xen-inventory' ),
-                    'borrowSuccess' => __( 'Item borrowed successfully!',       'xen-inventory' ),
-                    'returnSuccess' => __( 'Item returned successfully!',       'xen-inventory' ),
+                    'borrowTitle'   => __( 'Borrow: %s',                           'xen-inventory' ),
+                    'confirmBorrow' => __( 'Confirm Borrow',                       'xen-inventory' ),
+                    'borrowSuccess' => __( 'Item borrowed successfully!',           'xen-inventory' ),
+                    'returnSuccess' => __( 'Item returned successfully!',           'xen-inventory' ),
                     'errorGeneric'  => __( 'An error occurred. Please try again.', 'xen-inventory' ),
-                    'confirm'       => __( 'Are you sure?',                    'xen-inventory' ),
-                    'saving'        => __( 'Saving…',                          'xen-inventory' ),
-                    'available'     => __( 'Available',                        'xen-inventory' ),
+                    'confirm'       => __( 'Are you sure?',                        'xen-inventory' ),
+                    'saving'        => __( 'Saving…',                              'xen-inventory' ),
+                    'available'     => __( 'Available',                            'xen-inventory' ),
                 ],
             ] );
         }

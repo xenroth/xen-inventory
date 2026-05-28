@@ -31,10 +31,12 @@
 
         function showPopover( info ) {
             const props = info.event.extendedProps;
-            popItem.textContent   = info.event.title;
-            popAction.textContent = props.action   || '';
-            popQty.textContent    = props.quantity || '';
-            popNotes.textContent  = props.notes    || '—';
+
+            // Use the dedicated item_title prop; fall back to the full event title.
+            popItem.textContent   = props.item_title || info.event.title;
+            popAction.textContent = props.borrower   ? props.borrower + ' — ' + ( props.action || '' ) : ( props.action || '' );
+            popQty.textContent    = props.quantity   || '';
+            popNotes.textContent  = props.notes      || '—';
 
             // Position near the clicked element.
             const rect = info.el.getBoundingClientRect();

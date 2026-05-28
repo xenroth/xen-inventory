@@ -5,6 +5,44 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.5.0 — 2026-05-28 =
+------------------------------------------------------------------------------
+
+== Bug Fixes ==
+
+* [Critical] Calendar assets not loaded on /inventory/calendar/ clean URL.
+  When a visitor accessed the dedicated /inventory/calendar/ route, no WP
+  post object exists, so the old early-return guard (`is_a($post, 'WP_Post')`)
+  caused the entire enqueue function to exit before the `xen_view` query-var
+  check was reached. FullCalendar, calendar.js, and the xenCalendar localised
+  object were never enqueued, leaving a blank page.
+  Fix: moved `$xen_view = get_query_var('xen_view')` before the `$post` guard;
+  all `$post->post_content` references now wrapped in a safe `is_a()` check.
+
+* [Moderate] Active borrow events from previous months invisible in calendar.
+  The SQL query used `WHERE date_borrowed BETWEEN start AND end`, which only
+  showed events whose borrow DATE falls inside the FullCalendar view window.
+  Borrows that started before the current month and had not yet been returned
+  were completely absent from the calendar.
+  Fix: replaced the BETWEEN clause with overlap logic:
+  `date_borrowed <= range_end AND (date_returned >= range_start OR date_returned IS NULL)`.
+  Active borrows now correctly span from their borrow date through to today
+  (or their due date) across all calendar months.
+
+* [Moderate] Wrong locale format passed to FullCalendar.
+  `get_locale()` returns WordPress format (e.g. `en_US`) with an underscore
+  separator, but FullCalendar expects BCP 47 format (`en-US`) with a hyphen.
+  Fix: locale is now converted with `str_replace('_', '-', get_locale())`.
+
+* [Minor] Calendar event popover showed incorrect "Item" field.
+  The event `title` property was the combined `Item — Borrower` string, so
+  the "Item" row in the click popover displayed the full concatenated label.
+  Fix: `item_title` and `borrower` are now stored as separate `extendedProps`
+  on each event; the popover reads `extendedProps.item_title` for the item
+  name and `extendedProps.borrower + action` for the borrower row.
+  The popover label was also renamed from "Action" to "Borrower" to match.
+
+------------------------------------------------------------------------------
 = 1.4.0 — 2026-05-28 =
 ------------------------------------------------------------------------------
 
