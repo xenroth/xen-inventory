@@ -408,7 +408,7 @@ class InventoryLog {
                         ) AS partial_qty_returned
                  FROM {$tbl} l
                  INNER JOIN {$wpdb->posts} p ON p.ID = l.item_id
-                 WHERE l.action = 'borrowed'
+                 WHERE l.action IN ('borrowed', 'returned')
                    AND p.post_status = 'publish'
                    AND l.date_borrowed <= %s
                    AND ( l.date_borrowed >= %s OR l.date_returned IS NULL )
@@ -417,6 +417,33 @@ class InventoryLog {
                 $start . ' 00:00:00'
             )
         );
+
+        // Deduplicate: keep one primary row per borrow transaction.
+        //  - If a 'borrowed' row exists for the group (open/partial borrow), it is primary.
+        //  - If all rows are 'returned' (fully closed via close_log), the lowest id is primary.
+        // This prevents partial-return detail rows (inserted as 'returned') from producing
+        // a duplicate chip alongside the original 'borrowed' row on the same calendar day.
+        $primary = [];
+        foreach ( $rows as $row ) {
+            $entity_key = strtolower( trim( $row->borrower_full_name ?: $row->borrower_name ) );
+            $group_key  = $row->item_id . '|' . substr( $row->date_borrowed, 0, 10 ) . '|' . $entity_key;
+
+            if ( ! isset( $primary[ $group_key ] ) ) {
+                $primary[ $group_key ] = $row;
+            } else {
+                $existing = $primary[ $group_key ];
+                // Prefer the active 'borrowed' row (original borrow transaction) over
+                // a partial-return 'returned' detail row.
+                if ( 'returned' === $existing->action && 'borrowed' === $row->action ) {
+                    $primary[ $group_key ] = $row;
+                // If both are 'returned', prefer the lower id — that is the original row
+                // that was updated in-place by close_log() (partial-return inserts later ids).
+                } elseif ( 'returned' === $existing->action && 'returned' === $row->action && (int) $row->id < (int) $existing->id ) {
+                    $primary[ $group_key ] = $row;
+                }
+            }
+        }
+        $rows = array_values( $primary );
 
         $events = [];
 

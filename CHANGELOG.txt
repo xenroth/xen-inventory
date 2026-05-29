@@ -5,6 +5,20 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.7.4 — 2026-05-30 =
+------------------------------------------------------------------------------
+
+== Fixed ==
+* Calendar month view — borrowed records that have been returned now remain
+  visible on the calendar (shown as green "Returned" chips) after the
+  v1.7.2 fix that updated the Action column. Previously, returning an item
+  caused its calendar chip to disappear entirely because the calendar event
+  feed filtered only rows with action = 'borrowed', excluding the rows whose
+  action was correctly changed to 'returned' by close_log(). The feed now
+  includes both action values and deduplicates partial-return detail rows so
+  each borrow transaction is represented by exactly one chip.
+
+------------------------------------------------------------------------------
 = 1.7.3 — 2026-05-29 =
 ------------------------------------------------------------------------------
 
