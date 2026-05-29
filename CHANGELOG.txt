@@ -5,6 +5,28 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.7.5 — 2026-06-01 =
+------------------------------------------------------------------------------
+
+== Added ==
+* Return Log admin page (Inventory → Return Log) — a dedicated, paginated
+  view of every return record. Shows item, borrower entity / full name /
+  contact, quantity returned, item condition (colour-coded badge), return
+  remarks, return date/time, the WP account that processed the return, the
+  original borrow date, and borrow tags.
+* Return Log filtering — search by item title, borrower name, or contact;
+  filter by item condition (Good / Slightly Damaged / Totally Damaged);
+  narrow by return-date range. Clear button resets all filters.
+* Return Log CSV export — exports all matching records (respects active
+  filters) with columns: ID, Item, Borrower (Entity), Borrower (Full Name),
+  Contact, Qty Returned, Condition, Return Remarks, Return Date, Returned By
+  (WP Account), Original Borrow Date, Tags, Borrow Notes.
+* Tracks the WP user account that processed each return. All return paths
+  (Return button, partial return, and the Edit → date_returned flow) now
+  record the acting user in a new `returned_by_user_id` DB column. Historical
+  records without this data display "(legacy)" in the Return Log.
+
+------------------------------------------------------------------------------
 = 1.7.4 — 2026-05-30 =
 ------------------------------------------------------------------------------
 

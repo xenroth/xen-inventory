@@ -89,6 +89,16 @@ class AdminMenu {
             [ $this, 'render_borrow_log' ]
         );
 
+        // Return Log.
+        add_submenu_page(
+            'xen-inventory',
+            __( 'Return Log',    'xen-inventory' ),
+            __( 'Return Log',    'xen-inventory' ),
+            'xen_manage_inventory',
+            'xen-return-log',
+            [ $this, 'render_return_log' ]
+        );
+
         // Borrowers.
         add_submenu_page(
             'xen-inventory',
@@ -147,6 +157,22 @@ class AdminMenu {
         }
 
         $template = XEN_INVENTORY_PATH . 'includes/admin/views/borrow-log.php';
+        if ( file_exists( $template ) ) {
+            include $template;
+        }
+    }
+
+    /**
+     * Render the return log admin page.
+     *
+     * @return void
+     */
+    public function render_return_log(): void {
+        if ( ! current_user_can( 'xen_manage_inventory' ) ) {
+            wp_die( esc_html__( 'You do not have permission to view this page.', 'xen-inventory' ) );
+        }
+
+        $template = XEN_INVENTORY_PATH . 'includes/admin/views/return-log.php';
         if ( file_exists( $template ) ) {
             include $template;
         }

@@ -74,15 +74,15 @@ class InventoryLog {
      * @param  string $item_condition Item condition slug: good | slight_damage | total_damage.
      * @return bool
      */
-    public static function close_log( int $log_id, string $return_notes = '', string $item_condition = '', string $date_returned = '' ): bool {
+    public static function close_log( int $log_id, string $return_notes = '', string $item_condition = '', string $date_returned = '', int $returned_by_user_id = 0 ): bool {
         global $wpdb;
 
         $use_date = $date_returned ?: current_time( 'mysql', true );
 
         // Build the SET clause dynamically so we only include item_condition when provided.
         // Also flip action to 'returned' so the Action column displays correctly.
-        $set_sql = "action = 'returned', date_returned = %s, return_notes = %s";
-        $args    = [ $use_date, $return_notes ];
+        $set_sql = "action = 'returned', date_returned = %s, return_notes = %s, returned_by_user_id = %d";
+        $args    = [ $use_date, $return_notes, $returned_by_user_id ?: get_current_user_id() ];
         if ( '' !== $item_condition ) {
             $set_sql .= ', item_condition = %s';
             $args[]   = $item_condition;
@@ -131,7 +131,7 @@ class InventoryLog {
      * @param  string $notes        Optional return note.
      * @return bool   True on success, false on DB error or invalid input.
      */
-    public static function partial_return( int $log_id, int $qty_returned, string $return_notes = '', string $item_condition = '', string $date_returned = '' ): bool {
+    public static function partial_return( int $log_id, int $qty_returned, string $return_notes = '', string $item_condition = '', string $date_returned = '', int $returned_by_user_id = 0 ): bool {
         global $wpdb;
 
         if ( $qty_returned < 1 ) {
@@ -155,7 +155,7 @@ class InventoryLog {
 
         // Cap at original quantity — can't return more than was borrowed.
         if ( $qty_returned >= $original_qty ) {
-            return self::close_log( $log_id, $return_notes, $item_condition, $date_returned );
+            return self::close_log( $log_id, $return_notes, $item_condition, $date_returned, $returned_by_user_id );
         }
 
         // Reduce the outstanding quantity on the original row.
@@ -177,22 +177,23 @@ class InventoryLog {
         $wpdb->insert(
             self::table(),
             [
-                'item_id'            => (int) $log->item_id,
-                'user_id'            => (int) $log->user_id,
-                'borrower_name'      => $log->borrower_name,
-                'borrower_full_name' => $log->borrower_full_name,
-                'borrower_contact'   => $log->borrower_contact,
-                'borrow_tags'        => $log->borrow_tags,
-                'action'             => 'returned',
-                'quantity'           => $qty_returned,
-                'date_borrowed'      => $log->date_borrowed,
-                'date_due'           => $log->date_due,
-                'date_returned'      => $date_returned ?: current_time( 'mysql', true ),
-                'notes'              => '',
-                'return_notes'       => $return_notes,
-                'item_condition'     => '' !== $item_condition ? $item_condition : null,
+                'item_id'               => (int) $log->item_id,
+                'user_id'               => (int) $log->user_id,
+                'borrower_name'         => $log->borrower_name,
+                'borrower_full_name'    => $log->borrower_full_name,
+                'borrower_contact'      => $log->borrower_contact,
+                'borrow_tags'           => $log->borrow_tags,
+                'action'                => 'returned',
+                'quantity'              => $qty_returned,
+                'date_borrowed'         => $log->date_borrowed,
+                'date_due'              => $log->date_due,
+                'date_returned'         => $date_returned ?: current_time( 'mysql', true ),
+                'notes'                 => '',
+                'return_notes'          => $return_notes,
+                'item_condition'        => '' !== $item_condition ? $item_condition : null,
+                'returned_by_user_id'   => $returned_by_user_id ?: get_current_user_id(),
             ],
-            [ '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s' ]
+            [ '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d' ]
         );
 
         // Restore item status to 'available' if any units are now free.
@@ -217,7 +218,7 @@ class InventoryLog {
     public static function update_log( int $id, array $data ): bool {
         global $wpdb;
 
-        $allowed = [ 'notes', 'date_due', 'date_returned', 'action', 'return_notes', 'item_condition' ];
+        $allowed = [ 'notes', 'date_due', 'date_returned', 'action', 'return_notes', 'item_condition', 'returned_by_user_id' ];
         $set_parts = [];
         $values    = [];
 
@@ -357,6 +358,126 @@ class InventoryLog {
                 $item_id
             )
         );
+    }
+
+    /**
+     * Fetch paginated return-log rows for the Return Log admin page.
+     *
+     * Returns only rows where action = 'returned', joined with item title and
+     * the display name of the staff member who processed the return.
+     *
+     * @param  string $search     Full-text search against item title, borrower name/contact.
+     * @param  string $condition  Filter by item_condition slug ('good'|'slight_damage'|'total_damage').
+     * @param  string $date_from  Lower bound on date_returned (Y-m-d).
+     * @param  string $date_to    Upper bound on date_returned (Y-m-d).
+     * @param  int    $per_page   Rows per page.
+     * @param  int    $paged      Current page (1-based).
+     * @return array<int, object>
+     */
+    public static function get_return_logs(
+        string $search    = '',
+        string $condition = '',
+        string $date_from = '',
+        string $date_to   = '',
+        int    $per_page  = 30,
+        int    $paged     = 1
+    ): array {
+        global $wpdb;
+        $tbl    = self::table();
+        $offset = ( max( 1, $paged ) - 1 ) * $per_page;
+
+        [ $where_sql, $where_args ] = self::build_return_log_where( $wpdb, $tbl, $search, $condition, $date_from, $date_to );
+
+        $base = "FROM {$tbl} l
+                 INNER JOIN {$wpdb->posts} p  ON p.ID  = l.item_id AND p.post_status = 'publish'
+                 LEFT  JOIN {$wpdb->users} u  ON u.ID  = l.returned_by_user_id
+                 {$where_sql}";
+
+        $sql = "SELECT l.*, p.post_title AS item_title,
+                       COALESCE( u.display_name, '' ) AS returned_by_display_name
+                {$base}
+                ORDER BY l.date_returned DESC
+                LIMIT %d OFFSET %d";
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+        return $wpdb->get_results(
+            $wpdb->prepare( $sql, array_merge( $where_args, [ $per_page, $offset ] ) )
+        );
+    }
+
+    /**
+     * Count total return-log rows matching the given filters.
+     *
+     * @param  string $search    See get_return_logs().
+     * @param  string $condition See get_return_logs().
+     * @param  string $date_from See get_return_logs().
+     * @param  string $date_to   See get_return_logs().
+     * @return int
+     */
+    public static function count_return_logs(
+        string $search    = '',
+        string $condition = '',
+        string $date_from = '',
+        string $date_to   = ''
+    ): int {
+        global $wpdb;
+        $tbl = self::table();
+
+        [ $where_sql, $where_args ] = self::build_return_log_where( $wpdb, $tbl, $search, $condition, $date_from, $date_to );
+
+        $base = "FROM {$tbl} l
+                 INNER JOIN {$wpdb->posts} p ON p.ID = l.item_id AND p.post_status = 'publish'
+                 {$where_sql}";
+
+        $sql = "SELECT COUNT(*) {$base}";
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+        return (int) ( $where_args
+            ? $wpdb->get_var( $wpdb->prepare( $sql, $where_args ) )
+            : $wpdb->get_var( $sql ) );
+    }
+
+    /**
+     * Build the shared WHERE clause for return-log queries.
+     *
+     * @param  \wpdb  $wpdb
+     * @param  string $tbl
+     * @param  string $search
+     * @param  string $condition
+     * @param  string $date_from
+     * @param  string $date_to
+     * @return array{ 0: string, 1: array<int, mixed> }  [ where_sql, where_args ]
+     */
+    private static function build_return_log_where( \wpdb $wpdb, string $tbl, string $search, string $condition, string $date_from, string $date_to ): array {
+        $where      = [ "l.action = 'returned'" ];
+        $where_args = [];
+
+        if ( $search ) {
+            $like         = '%' . $wpdb->esc_like( $search ) . '%';
+            $where[]      = '( p.post_title LIKE %s OR l.borrower_full_name LIKE %s OR l.borrower_name LIKE %s OR l.borrower_contact LIKE %s )';
+            $where_args[] = $like;
+            $where_args[] = $like;
+            $where_args[] = $like;
+            $where_args[] = $like;
+        }
+
+        $allowed_conditions = [ 'good', 'slight_damage', 'total_damage' ];
+        if ( $condition && in_array( $condition, $allowed_conditions, true ) ) {
+            $where[]      = 'l.item_condition = %s';
+            $where_args[] = $condition;
+        }
+
+        if ( $date_from && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_from ) ) {
+            $where[]      = 'l.date_returned >= %s';
+            $where_args[] = $date_from . ' 00:00:00';
+        }
+
+        if ( $date_to && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_to ) ) {
+            $where[]      = 'l.date_returned <= %s';
+            $where_args[] = $date_to . ' 23:59:59';
+        }
+
+        return [ 'WHERE ' . implode( ' AND ', $where ), $where_args ];
     }
 
     /**

@@ -159,8 +159,17 @@ $check_update_url = wp_nonce_url(
                     ?>
                 </h3>
                 <ul class="xen-whats-new-list">
-                    <li><?php esc_html_e( 'Calendar: returned items now remain visible on the calendar as green "Returned" chips. Previously, returning an item caused its chip to disappear entirely (regression introduced in v1.7.2).', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Return Log: new admin page (Inventory → Return Log) listing every return record with item, borrower, quantity, condition, return remarks, return date, the WP account that processed it, original borrow date, and tags.', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Return Log: filter by search, item condition (Good / Slightly Damaged / Totally Damaged), and return-date range.', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Return Log: export filtered results to CSV with all return details including the WP account column.', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'All return actions (Return button, partial return, and manual edit) now record which WP account processed the return.', 'xen-inventory' ); ?></li>
                 </ul>
+                <details style="margin-top:.5rem;">
+                    <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.7.4 changes ▸', 'xen-inventory' ); ?></summary>
+                    <ul class="xen-whats-new-list" style="margin-top:.375rem;">
+                        <li><?php esc_html_e( 'Calendar: returned items now remain visible on the calendar as green "Returned" chips. Previously, returning an item caused its chip to disappear entirely (regression introduced in v1.7.2).', 'xen-inventory' ); ?></li>
+                    </ul>
+                </details>
                 <details style="margin-top:.5rem;">
                     <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.7.3 changes ▸', 'xen-inventory' ); ?></summary>
                     <ul class="xen-whats-new-list" style="margin-top:.375rem;">

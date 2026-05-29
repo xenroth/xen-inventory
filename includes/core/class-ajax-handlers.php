@@ -44,6 +44,9 @@ class AjaxHandlers {
         // Export borrow log as CSV (admin only, standard form POST via admin-post.php).
         add_action( 'admin_post_xen_export_log', [ $this, 'export_log_csv' ] );
 
+        // Export return log as CSV.
+        add_action( 'admin_post_xen_export_return_log', [ $this, 'export_return_log_csv' ] );
+
         // Purge all borrow/return history (manage_options only).
         add_action( 'admin_post_xen_purge_borrow_log', [ $this, 'purge_borrow_log' ] );
 
@@ -212,12 +215,14 @@ class AjaxHandlers {
             wp_send_json_error( [ 'message' => __( 'Please select the item condition on return.', 'xen-inventory' ) ], 400 );
         }
 
+        $returned_by_user_id = get_current_user_id();
+
         // qty_returned = 0 means "return all" — delegate to close_log which
         // handles full returns and the item-status update.
         if ( 0 === $qty_returned ) {
-            $ok = \XenInventory\Models\InventoryLog::close_log( $log_id, $return_notes, $item_condition, $date_returned );
+            $ok = \XenInventory\Models\InventoryLog::close_log( $log_id, $return_notes, $item_condition, $date_returned, $returned_by_user_id );
         } else {
-            $ok = \XenInventory\Models\InventoryLog::partial_return( $log_id, $qty_returned, $return_notes, $item_condition, $date_returned );
+            $ok = \XenInventory\Models\InventoryLog::partial_return( $log_id, $qty_returned, $return_notes, $item_condition, $date_returned, $returned_by_user_id );
         }
 
         if ( $ok ) {
@@ -274,13 +279,15 @@ class AjaxHandlers {
                 if ( strpos( $date_returned, 'T' ) !== false ) {
                     $datetime_val .= ':00'; // append seconds
                 }
-                $data['date_returned'] = $datetime_val;
-                $data['action']        = 'returned';
+                $data['date_returned']        = $datetime_val;
+                $data['action']               = 'returned';
+                $data['returned_by_user_id']  = get_current_user_id();
             }
         } elseif ( isset( $_POST['date_returned'] ) && '' === $_POST['date_returned'] ) {
             // Explicitly clearing the return date — re-open the record.
-            $data['date_returned'] = null;
-            $data['action']        = 'borrowed';
+            $data['date_returned']       = null;
+            $data['action']              = 'borrowed';
+            $data['returned_by_user_id'] = null;
         }
 
         if ( isset( $_POST['return_notes'] ) ) {
@@ -437,6 +444,101 @@ class AjaxHandlers {
                 $returned,
                 $status,
                 $log->notes                  ?? '',
+            ] );
+        }
+
+        fclose( $out );
+        exit;
+    }
+
+    /**
+     * Export the return log as a UTF-8 CSV file.
+     *
+     * Triggered by a form POST to admin-post.php with action=xen_export_return_log.
+     * Respects the same search/condition/date filters as the return log screen.
+     *
+     * @return void  Outputs CSV file and exits.
+     */
+    public function export_return_log_csv(): void {
+        check_admin_referer( 'xen_export_return_log' );
+
+        if ( ! current_user_can( 'xen_manage_inventory' ) ) {
+            wp_die( esc_html__( 'Permission denied.', 'xen-inventory' ), 403 );
+        }
+
+        // Read and validate filters (same field names as return-log.php view).
+        $search    = sanitize_text_field( wp_unslash( $_POST['xen_search']    ?? '' ) );
+        $condition = sanitize_key(         wp_unslash( $_POST['xen_condition'] ?? '' ) );
+        $date_from = sanitize_text_field( wp_unslash( $_POST['xen_date_from'] ?? '' ) );
+        $date_to   = sanitize_text_field( wp_unslash( $_POST['xen_date_to']   ?? '' ) );
+
+        if ( $date_from && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_from ) ) {
+            $date_from = '';
+        }
+        if ( $date_to && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_to ) ) {
+            $date_to = '';
+        }
+
+        // Fetch all matching rows (no pagination for export).
+        $logs = \XenInventory\Models\InventoryLog::get_return_logs(
+            $search, $condition, $date_from, $date_to, PHP_INT_MAX, 1
+        );
+
+        $condition_labels = [
+            'good'         => __( 'Good',              'xen-inventory' ),
+            'slight_damage'=> __( 'Slightly Damaged',  'xen-inventory' ),
+            'total_damage' => __( 'Totally Damaged',   'xen-inventory' ),
+        ];
+
+        $date_fmt = get_option( 'date_format' );
+        $filename = 'xen-return-log-' . gmdate( 'Y-m-d' ) . '.csv';
+
+        nocache_headers();
+        header( 'Content-Type: text/csv; charset=utf-8' );
+        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+        header( 'Pragma: no-cache' );
+        header( 'Expires: 0' );
+
+        $out = fopen( 'php://output', 'w' );
+
+        // UTF-8 BOM so Excel opens with correct encoding.
+        fwrite( $out, "\xEF\xBB\xBF" );
+
+        fputcsv( $out, [
+            __( 'ID',                    'xen-inventory' ),
+            __( 'Item',                  'xen-inventory' ),
+            __( 'Borrower (Entity)',     'xen-inventory' ),
+            __( 'Borrower (Full Name)',  'xen-inventory' ),
+            __( 'Contact',               'xen-inventory' ),
+            __( 'Qty Returned',          'xen-inventory' ),
+            __( 'Condition',             'xen-inventory' ),
+            __( 'Return Remarks',        'xen-inventory' ),
+            __( 'Return Date',           'xen-inventory' ),
+            __( 'Returned By (WP Account)', 'xen-inventory' ),
+            __( 'Original Borrow Date',  'xen-inventory' ),
+            __( 'Tags',                  'xen-inventory' ),
+            __( 'Borrow Notes',          'xen-inventory' ),
+        ] );
+
+        foreach ( $logs as $log ) {
+            $cond_label    = $condition_labels[ $log->item_condition ] ?? ( $log->item_condition ?? '' );
+            $date_returned = $log->date_returned ? wp_date( $date_fmt, strtotime( $log->date_returned ) ) : '';
+            $date_borrowed = $log->date_borrowed ? wp_date( $date_fmt, strtotime( $log->date_borrowed ) ) : '';
+
+            fputcsv( $out, [
+                (int) $log->id,
+                $log->item_title                ?? '',
+                $log->borrower_name             ?? '',
+                $log->borrower_full_name        ?? '',
+                $log->borrower_contact          ?? '',
+                (int) $log->quantity,
+                $cond_label,
+                $log->return_notes              ?? '',
+                $date_returned,
+                $log->returned_by_display_name  ?? '',
+                $date_borrowed,
+                $log->borrow_tags               ?? '',
+                $log->notes                     ?? '',
             ] );
         }
 
