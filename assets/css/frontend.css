@@ -413,6 +413,50 @@
 }
 
 /* --------------------------------------------------------------------------
+   Entity-name autocomplete dropdown
+   -------------------------------------------------------------------------- */
+.xen-entity-suggest-wrap {
+    position: relative;
+    display: block;
+}
+
+.xen-entity-suggest-list {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+    background: var(--xen-color-surface);
+    border: 1px solid var(--xen-color-border);
+    border-radius: var(--xen-radius);
+    box-shadow: var(--xen-shadow-lg);
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.xen-entity-suggest-list li {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--xen-color-text);
+    cursor: pointer;
+    border-bottom: 1px solid var(--xen-color-border);
+}
+
+.xen-entity-suggest-list li:last-child {
+    border-bottom: none;
+}
+
+.xen-entity-suggest-list li:hover,
+.xen-entity-suggest-list li.xen-suggest-active {
+    background: #eff6ff;
+    color: var(--xen-color-primary);
+}
+
+/* --------------------------------------------------------------------------
    Notice
    -------------------------------------------------------------------------- */
 .xen-notice {

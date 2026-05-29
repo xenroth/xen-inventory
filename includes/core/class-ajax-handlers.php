@@ -49,6 +49,9 @@ class AjaxHandlers {
 
         // Export borrowers list as CSV.
         add_action( 'admin_post_xen_export_borrowers_csv', [ $this, 'export_borrowers_csv' ] );
+
+        // Entity name autocomplete on borrow forms (logged-in users only).
+        add_action( 'wp_ajax_xen_get_entity_suggestions', [ $this, 'get_entity_suggestions' ] );
     }
 
     // -----------------------------------------------------------------------
@@ -603,6 +606,46 @@ class AjaxHandlers {
      *
      * @return void  Outputs CSV and exits.
      */
+    /**
+     * Return entity name suggestions matching the supplied search term.
+     *
+     * Used by the borrow-form "Full Name / Entity" autocomplete field.
+     * Returns up to 8 distinct names ordered by borrow frequency (most used first).
+     *
+     * @return void  Outputs JSON and exits.
+     */
+    public function get_entity_suggestions(): void {
+        check_ajax_referer( 'xen_entity_suggestions_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'xen_borrow_items' ) ) {
+            wp_send_json_error( [], 403 );
+        }
+
+        $term = sanitize_text_field( wp_unslash( $_POST['term'] ?? '' ) );
+        if ( strlen( $term ) < 2 ) {
+            wp_send_json_success( [] );
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . XEN_INVENTORY_LOG_TABLE;
+        $like  = '%' . $wpdb->esc_like( $term ) . '%';
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $results = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT COALESCE(NULLIF(TRIM(borrower_full_name), ''), TRIM(borrower_name)) AS entity_name
+                 FROM {$table}
+                 WHERE COALESCE(NULLIF(TRIM(borrower_full_name), ''), TRIM(borrower_name)) LIKE %s
+                 GROUP BY entity_name
+                 ORDER BY COUNT(*) DESC, entity_name ASC
+                 LIMIT 8",
+                $like
+            )
+        );
+
+        wp_send_json_success( array_values( array_filter( $results ) ) );
+    }
+
     public function export_borrowers_csv(): void {
         check_admin_referer( 'xen_export_borrowers_csv' );
 

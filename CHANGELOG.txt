@@ -5,6 +5,26 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.6.3 — 2026-05-29 =
+------------------------------------------------------------------------------
+
+== Added ==
+* Borrow form "Full Name / Entity" field now shows an autocomplete dropdown
+  of previously-used entity names as the user types (minimum 2 characters).
+  Suggestions are fetched via AJAX (new `xen_get_entity_suggestions` action),
+  ordered by borrow frequency so the most-used entities appear first.
+  Works on the inline borrow modal (inventory display + item page) and the
+  standalone /inventory/borrow/ page. Keyboard navigation supported
+  (ArrowDown / ArrowUp / Enter / Escape).
+
+== Changed ==
+* Dashboard "What's New" card now lists v1.6.3 highlights and includes a
+  collapsible "v1.6.2 changes" section so recent history is always visible.
+* Dashboard layout: "Quick Start Guide" card moved to its own full-width
+  row below the Version and What's New cards, improving readability and
+  making better use of screen real estate.
+
+------------------------------------------------------------------------------
 = 1.6.2 — 2026-06-08 =
 ------------------------------------------------------------------------------
 

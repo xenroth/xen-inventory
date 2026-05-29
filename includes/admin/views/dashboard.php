@@ -111,7 +111,7 @@ $check_update_url = wp_nonce_url(
 <div class="wrap xen-admin-wrap">
     <h1><?php esc_html_e( 'XEN Inventory — Dashboard', 'xen-inventory' ); ?></h1>
 
-    <!-- ===== TOP INFO ROW: Version + What's New + Quick Start ===== -->
+    <!-- ===== TOP INFO ROW: Version + What's New ===== -->
     <div class="xen-dashboard-info-row">
 
         <!-- Version status card -->
@@ -159,17 +159,28 @@ $check_update_url = wp_nonce_url(
                     ?>
                 </h3>
                 <ul class="xen-whats-new-list">
-                    <li><?php esc_html_e( 'Fixed double-click update phantom notice', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Danger Zone: purge all borrow records with audit log', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Dashboard version check + announcement cards', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Borrowers: status filters + CSV export', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Calendar scrollbar no longer overlaps grid columns', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Inventory grid: 3-row default, configurable column count', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Entity name autocomplete on all borrow forms', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Dashboard: What\'s New shows multi-version history', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Dashboard layout: Getting Started moved to its own row', 'xen-inventory' ); ?></li>
                 </ul>
+                <details style="margin-top:.5rem;">
+                    <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.6.2 changes ▸', 'xen-inventory' ); ?></summary>
+                    <ul class="xen-whats-new-list" style="margin-top:.375rem;">
+                        <li><?php esc_html_e( 'Dashboard recent activity: dblclick + Edit/Return quick-actions', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Return modal: optional Return Date &amp; Time field', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Borrower list: dblclick quick-view modal with active borrows', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Filter + pagination on borrower history, meta-box &amp; dashboard', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Borrower profile: Associated WP Accounts section hidden', 'xen-inventory' ); ?></li>
+                    </ul>
+                </details>
             </div>
         </div>
 
-        <!-- Quick Start guide card -->
+    </div><!-- .xen-dashboard-info-row -->
+
+    <!-- ===== GUIDE ROW: Quick Start (full width) ===== -->
+    <div class="xen-dashboard-guide-row">
+
         <div class="xen-info-card xen-info-card--guide">
             <div class="xen-info-card__icon" aria-hidden="true">
                 <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
@@ -189,7 +200,7 @@ $check_update_url = wp_nonce_url(
             </div>
         </div>
 
-    </div><!-- .xen-dashboard-info-row -->
+    </div><!-- .xen-dashboard-guide-row -->
 
     <div class="xen-stats-grid">
         <div class="xen-stat-card">

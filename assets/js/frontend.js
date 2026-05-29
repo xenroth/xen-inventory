@@ -702,4 +702,96 @@
         render();
     } )();
 
+    // -----------------------------------------------------------------------
+    // Entity name autocomplete — Full Name / Entity field on borrow forms.
+    // -----------------------------------------------------------------------
+
+    /**
+     * Attach entity-name autocomplete to a Full Name / Entity input.
+     *
+     * Wraps the input in a relative-positioned span, appends a dropdown list,
+     * and wires input / blur / keyboard handlers. Requires xenInventory.entityNonce.
+     *
+     * @param {jQuery} $input  The text input to enhance.
+     */
+    function initEntityAutocomplete( $input ) {
+        if ( ! $input.length ) { return; }
+
+        // Wrap input so the dropdown can be absolutely positioned below it.
+        $input.wrap( '<span class="xen-entity-suggest-wrap"></span>' );
+        var $list = $( '<ul class="xen-entity-suggest-list" role="listbox" aria-label="Suggestions"></ul>' )
+            .appendTo( $input.parent() );
+
+        var timer;
+
+        function hideSuggestions() {
+            $list.empty().hide();
+        }
+
+        function showSuggestions( names ) {
+            $list.empty();
+            if ( ! names || ! names.length ) { $list.hide(); return; }
+            names.forEach( function ( name ) {
+                $( '<li role="option"></li>' ).text( name )
+                    .on( 'mousedown', function ( e ) {
+                        e.preventDefault(); // keep focus on input
+                        $input.val( name );
+                        hideSuggestions();
+                    } )
+                    .appendTo( $list );
+            } );
+            $list.show();
+        }
+
+        $input.on( 'input', function () {
+            clearTimeout( timer );
+            var term = $.trim( $( this ).val() );
+            if ( term.length < 2 ) { hideSuggestions(); return; }
+            timer = setTimeout( function () {
+                if ( typeof xenInventory === 'undefined' || ! xenInventory.entityNonce ) { return; }
+                $.post( xenInventory.ajaxUrl, {
+                    action: 'xen_get_entity_suggestions',
+                    nonce:  xenInventory.entityNonce,
+                    term:   term,
+                } ).done( function ( resp ) {
+                    if ( resp.success ) { showSuggestions( resp.data ); }
+                } );
+            }, 280 );
+        } );
+
+        // Hide after blur — delayed so mousedown fires first.
+        $input.on( 'blur', function () {
+            setTimeout( hideSuggestions, 180 );
+        } );
+
+        // Keyboard navigation: ArrowDown / ArrowUp / Enter / Escape.
+        $input.on( 'keydown', function ( e ) {
+            var $items  = $list.find( 'li' );
+            if ( ! $items.length ) { return; }
+            var $active = $items.filter( '.xen-suggest-active' );
+            var idx     = $items.index( $active );
+
+            if ( 'ArrowDown' === e.key ) {
+                e.preventDefault();
+                $items.removeClass( 'xen-suggest-active' );
+                $items.eq( idx < $items.length - 1 ? idx + 1 : 0 ).addClass( 'xen-suggest-active' );
+            } else if ( 'ArrowUp' === e.key ) {
+                e.preventDefault();
+                $items.removeClass( 'xen-suggest-active' );
+                $items.eq( idx > 0 ? idx - 1 : $items.length - 1 ).addClass( 'xen-suggest-active' );
+            } else if ( 'Enter' === e.key && $active.length ) {
+                e.preventDefault();
+                $input.val( $active.text() );
+                hideSuggestions();
+            } else if ( 'Escape' === e.key ) {
+                hideSuggestions();
+            }
+        } );
+    }
+
+    // Borrow modal on inventory display page and single item page.
+    initEntityAutocomplete( $( '#xen-borrow-fullname' ) );
+    // Standalone borrow page.
+    initEntityAutocomplete( $( '#xen-bp-fullname' ) );
+
 } )( jQuery );

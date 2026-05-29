@@ -635,7 +635,17 @@
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Full-width guide row below the version/what's-new row */
+.xen-dashboard-guide-row {
+    display: flex;
     margin-bottom: 1.75rem;
+}
+
+.xen-dashboard-guide-row .xen-info-card {
+    flex: 1;
 }
 
 .xen-info-card {
