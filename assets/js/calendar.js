@@ -118,6 +118,7 @@
 
         function showDayModal( dateStr, events ) {
             if ( ! dayModal ) return;
+            _calDayModalDateStr = dateStr;
 
             // Format the date heading using the locale supplied by WordPress.
             var date = new Date( dateStr + 'T12:00:00' );
@@ -197,6 +198,7 @@
 
         function hideDayModal() {
             if ( dayModal ) dayModal.setAttribute( 'hidden', '' );
+            _calDayModalDateStr = null;
         }
 
         if ( dayModalClose ) {
@@ -280,21 +282,22 @@
         var calReturnStatus     = document.getElementById( 'xen-cal-return-status' );
 
         // State kept while the modal is open.
-        var _calReturnLogId   = null;
-        var _calReturnTotalQty = 1;
+        var _calReturnLogId    = null;
+        var _calReturnTotalQty  = 1;
         var _calReturnTriggerBtn = null; // the Return button that opened the modal
+        var _calDayModalDateStr  = null; // date string currently shown in the day modal
 
-        function openCalReturnModal( logId, totalQty, triggerBtn ) {
+        function openCalReturnModal( logId, totalQty, triggerBtn, itemName ) {
             if ( ! calReturnModal ) return;
 
             _calReturnLogId      = logId;
             _calReturnTotalQty   = totalQty;
             _calReturnTriggerBtn = triggerBtn;
 
-            // Derive item name from the trigger button's ancestor list item.
+            // Derive item name: explicit param > trigger btn's list-item > fallback.
             var li = triggerBtn ? triggerBtn.closest( '.xen-day-modal__item' ) : null;
-            var itemName = li ? ( li.dataset.itemTitle || '' ) : '';
-            if ( calReturnItemName ) calReturnItemName.textContent = itemName || ( 'Log #' + logId );
+            var derivedName = itemName || ( li ? ( li.dataset.itemTitle || '' ) : '' );
+            if ( calReturnItemName ) calReturnItemName.textContent = derivedName || ( 'Log #' + logId );
 
             if ( totalQty > 1 ) {
                 calReturnQtyInput.value = totalQty;
@@ -375,7 +378,7 @@
                         if ( data.success ) {
                             closeCalReturnModal();
                             calendar.refetchEvents();
-                            hideDayModal();
+                            // Day modal stays open; eventsSet will refresh it automatically.
                         } else {
                             var msg = data.data && data.data.message ? data.data.message : 'Error.';
                             calReturnStatus.textContent = msg;
@@ -556,10 +559,22 @@
                     window._xenLastClickId  === clickedId &&
                     now - ( window._xenLastClickTs || 0 ) < 400
                 ) {
-                    // Second click — treat as double-click → open edit modal.
+                    // Second click — treat as double-click.
+                    // Open return modal for active/partial events; edit modal for already-returned.
                     window._xenLastClickId = null;
                     window._xenLastClickTs = 0;
-                    openEditModal( info.event );
+                    var dblProps  = info.event.extendedProps || {};
+                    var dblStatus = dblProps.return_status || ( dblProps.date_returned ? 'returned' : 'open' );
+                    if ( dblStatus !== 'returned' ) {
+                        openCalReturnModal(
+                            dblProps.log_id || info.event.id || '',
+                            parseInt( dblProps.quantity || 1, 10 ),
+                            null,
+                            dblProps.item_title || info.event.title || ''
+                        );
+                    } else {
+                        openEditModal( info.event );
+                    }
                     return;
                 }
 
@@ -584,10 +599,40 @@
 
                 showDayModal( info.dateStr, dayEvents );
             },
+            // Limit event chips per day cell; excess shown as a "+N more" hint.
+            dayMaxEvents: 5,
+            moreLinkText: function ( n ) { return '+' + n + ' more — click day to see all'; },
+            moreLinkClick: function ( info ) {
+                var d       = info.date;
+                var pad     = function ( n ) { return String( n ).padStart( 2, '0' ); };
+                var dateStr = d.getFullYear() + '-' + pad( d.getMonth() + 1 ) + '-' + pad( d.getDate() );
+                var dayStart = new Date( dateStr + 'T00:00:00' );
+                var dayEnd   = new Date( dateStr + 'T23:59:59' );
+                var dayEvents = calendar.getEvents().filter( function ( ev ) {
+                    var evStart = ev.start;
+                    var evEnd   = ev.end || ev.start;
+                    return evStart <= dayEnd && evEnd >= dayStart;
+                } );
+                hidePopover();
+                showDayModal( dateStr, dayEvents );
+                return false; // prevent FullCalendar's built-in popover
+            },
             // Close overlays when navigating months.
             datesSet: function () {
                 hidePopover();
                 hideDayModal();
+            },
+            // After any event refetch, refresh the day modal if it is still open.
+            eventsSet: function () {
+                if ( ! _calDayModalDateStr || ! dayModal || dayModal.hasAttribute( 'hidden' ) ) return;
+                var dayStart = new Date( _calDayModalDateStr + 'T00:00:00' );
+                var dayEnd   = new Date( _calDayModalDateStr + 'T23:59:59' );
+                var dayEvents = calendar.getEvents().filter( function ( ev ) {
+                    var evStart = ev.start;
+                    var evEnd   = ev.end || ev.start;
+                    return evStart <= dayEnd && evEnd >= dayStart;
+                } );
+                showDayModal( _calDayModalDateStr, dayEvents );
             },
         } );
 

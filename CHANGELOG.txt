@@ -5,6 +5,25 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= Unreleased =
+------------------------------------------------------------------------------
+
+== Changed ==
+* Calendar month view — double-clicking an event chip on the grid now opens
+  the Return Item modal instead of the Edit modal. For already-returned events
+  the Edit modal continues to open (nothing to return).
+* Calendar month view — after a return is submitted from the day-detail modal,
+  the modal stays open and automatically refreshes with the updated event list
+  so the returned item remains visible (now shown as green "Returned" status)
+  without needing to click the day again.
+
+== Added ==
+* Calendar month view — each day cell is now capped at 5 visible event chips.
+  Overflow events are hidden and a "+N more — click day to see all" link
+  appears at the bottom of the cell. Clicking either the link or the day cell
+  opens the full day-detail modal showing every record.
+
+------------------------------------------------------------------------------
 = 1.7.1 — 2026-05-29 =
 ------------------------------------------------------------------------------
 
