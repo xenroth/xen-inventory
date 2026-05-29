@@ -80,7 +80,8 @@ class InventoryLog {
         $use_date = $date_returned ?: current_time( 'mysql', true );
 
         // Build the SET clause dynamically so we only include item_condition when provided.
-        $set_sql = 'date_returned = %s, return_notes = %s';
+        // Also flip action to 'returned' so the Action column displays correctly.
+        $set_sql = "action = 'returned', date_returned = %s, return_notes = %s";
         $args    = [ $use_date, $return_notes ];
         if ( '' !== $item_condition ) {
             $set_sql .= ', item_condition = %s';

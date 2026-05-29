@@ -24,6 +24,21 @@ Versions follow Semantic Versioning (https://semver.org/).
   opens the full day-detail modal showing every record.
 
 ------------------------------------------------------------------------------
+= 1.7.2 — 2026-05-29 =
+------------------------------------------------------------------------------
+
+== Fixed ==
+* Borrow Log "Action" column showed "Borrowed" for returned records.
+  Root cause: `close_log()` set `date_returned` but never updated the `action`
+  column from `borrowed` to `returned`. The Action badge in the admin Borrow
+  Log (and Borrowers detail) therefore always displayed "Borrowed" even when
+  the Returned column clearly showed a return date.
+  Fix: `close_log()` now also sets `action = 'returned'` in the same UPDATE.
+  A one-time data-migration in `Activator::maybe_upgrade()` backfills all
+  existing rows where `action = 'borrowed'` AND `date_returned IS NOT NULL`
+  so historical records are corrected on the next admin page load.
+
+------------------------------------------------------------------------------
 = 1.7.1 — 2026-05-29 =
 ------------------------------------------------------------------------------
 

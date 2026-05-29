@@ -148,6 +148,8 @@ class Activator {
      * @return void
      */
     public static function maybe_upgrade(): void {
+        global $wpdb;
+
         $stored = get_option( 'xen_inventory_version', '0.0.0' );
         if ( version_compare( $stored, XEN_INVENTORY_VERSION, '<' ) ) {
             self::create_log_table();   // dbDelta handles ADD COLUMN automatically.
@@ -157,6 +159,16 @@ class Activator {
             // Schedule a one-time rewrite flush so any CPT/archive rule changes
             // take effect automatically on the next admin page load.
             update_option( 'xen_inventory_flush_rewrites', '1' );
+        }
+
+        // v1.7.2 — one-time migration: fix stale 'borrowed' action on fully-returned
+        // rows that were closed via close_log() before this version.
+        if ( version_compare( $stored, '1.7.2', '<' ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query(
+                "UPDATE {$wpdb->prefix}" . XEN_INVENTORY_LOG_TABLE .
+                " SET action = 'returned' WHERE action = 'borrowed' AND date_returned IS NOT NULL"
+            );
         }
 
         // Perform the deferred flush on admin requests only (safe and cheap).
