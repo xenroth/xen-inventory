@@ -5,6 +5,38 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.6.2 — 2026-06-08 =
+------------------------------------------------------------------------------
+
+== Added ==
+* Dashboard "Recent Activity" rows are now double-clickable (opens read-only
+  detail modal) and include inline Edit and Return quick-action buttons.
+* Admin Return modal now includes an optional "Return Date & Time" field
+  (datetime-local input with a "Now" shortcut button). When left blank the
+  return timestamp defaults to the current server time. Back-end model
+  (`close_log`, `partial_return`) and AJAX handler (`xen_return_item`)
+  updated to accept and validate the supplied datetime.
+* Borrowers list view rows are now double-clickable: opens a summary modal
+  showing borrower stats and all currently active borrows with inline Return
+  quick-action buttons and a "View Full History" link.
+* Borrowers list view now has client-side pagination (20 entities per page)
+  in addition to the existing live text + status filter.
+* Borrowers detail (entity profile) Borrow History now has a client-side
+  filter toolbar (search + action + status) and pagination (20 rows per page).
+* Item edit screen Borrow History meta-box now has a search filter and
+  client-side pagination (15 rows per page).
+* New model method `InventoryLog::get_active_borrows_all_entities()` —
+  returns all open borrow records across all entities in one query, used to
+  embed active-borrow data in borrower list rows without N+1 queries.
+
+== Changed ==
+* Associated WP Accounts section on the Borrower profile page is now hidden
+  (not removed — still rendered in HTML for potential programmatic use).
+* `InventoryLog::close_log()` and `partial_return()` signatures extended with
+  an optional `string $date_returned = ''` parameter; callers that omit it
+  continue to use the current server time (no breaking change).
+
+------------------------------------------------------------------------------
 = 1.6.1 — 2026-06-02 =
 ------------------------------------------------------------------------------
 

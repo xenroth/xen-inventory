@@ -174,10 +174,22 @@ class AjaxHandlers {
             wp_send_json_error( [ 'message' => __( 'Permission denied.', 'xen-inventory' ) ], 403 );
         }
 
-        $log_id        = absint( $_POST['log_id']        ?? 0 );
-        $qty_returned  = absint( $_POST['qty_returned']   ?? 0 );
-        $return_notes  = sanitize_textarea_field( wp_unslash( $_POST['return_notes']   ?? '' ) );
+        $log_id         = absint( $_POST['log_id']        ?? 0 );
+        $qty_returned   = absint( $_POST['qty_returned']   ?? 0 );
+        $return_notes   = sanitize_textarea_field( wp_unslash( $_POST['return_notes']   ?? '' ) );
         $item_condition = sanitize_key( wp_unslash( $_POST['item_condition'] ?? '' ) );
+
+        // Optional return date/time — must be a valid datetime string.
+        $date_returned = '';
+        if ( ! empty( $_POST['date_returned'] ) ) {
+            $dr = sanitize_text_field( wp_unslash( $_POST['date_returned'] ) );
+            if ( preg_match( '/^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2})?$/', $dr ) ) {
+                $date_returned = str_replace( 'T', ' ', $dr );
+                if ( 16 === strlen( $date_returned ) ) {
+                    $date_returned .= ':00';
+                }
+            }
+        }
 
         if ( ! $log_id ) {
             wp_send_json_error( [ 'message' => __( 'Invalid log entry.', 'xen-inventory' ) ], 400 );
@@ -197,9 +209,9 @@ class AjaxHandlers {
         // qty_returned = 0 means "return all" — delegate to close_log which
         // handles full returns and the item-status update.
         if ( 0 === $qty_returned ) {
-            $ok = \XenInventory\Models\InventoryLog::close_log( $log_id, $return_notes, $item_condition );
+            $ok = \XenInventory\Models\InventoryLog::close_log( $log_id, $return_notes, $item_condition, $date_returned );
         } else {
-            $ok = \XenInventory\Models\InventoryLog::partial_return( $log_id, $qty_returned, $return_notes, $item_condition );
+            $ok = \XenInventory\Models\InventoryLog::partial_return( $log_id, $qty_returned, $return_notes, $item_condition, $date_returned );
         }
 
         if ( $ok ) {

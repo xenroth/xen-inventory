@@ -17,6 +17,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 <?php if ( empty( $logs ) ) : ?>
     <p><?php esc_html_e( 'No borrow history recorded yet for this item.', 'xen-inventory' ); ?></p>
 <?php else : ?>
+    <!-- Filter toolbar -->
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem;align-items:center;">
+        <input
+            type="search"
+            id="xen-meta-box-history-search"
+            placeholder="<?php esc_attr_e( 'Search borrower or notes…', 'xen-inventory' ); ?>"
+            style="flex:1 1 160px;min-width:130px;padding:.3rem .5rem;border:1px solid #ccd0d4;border-radius:3px;"
+            aria-label="<?php esc_attr_e( 'Filter history', 'xen-inventory' ); ?>"
+        >
+        <select id="xen-meta-box-history-status" style="padding:.3rem .5rem;border:1px solid #ccd0d4;border-radius:3px;" aria-label="<?php esc_attr_e( 'Filter by status', 'xen-inventory' ); ?>">
+            <option value=""><?php esc_html_e( 'All', 'xen-inventory' ); ?></option>
+            <option value="open"><?php esc_html_e( 'Open', 'xen-inventory' ); ?></option>
+            <option value="returned"><?php esc_html_e( 'Returned', 'xen-inventory' ); ?></option>
+        </select>
+    </div>
+
+    <div id="xen-meta-box-history-wrap">
     <table class="widefat striped xen-history-table">
         <thead>
             <tr>
@@ -31,7 +48,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <th><?php esc_html_e( 'Actions',      'xen-inventory' ); ?></th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="xen-meta-box-history-tbody">
             <?php foreach ( $logs as $log ) : ?>
                 <tr class="xen-history-row"
                     style="cursor:pointer"
@@ -50,6 +67,8 @@ if ( ! defined( 'ABSPATH' ) ) {
                     data-notes="<?php echo esc_attr( $log->notes ?? '' ); ?>"
                     data-return-notes="<?php echo esc_attr( $log->return_notes ?? '' ); ?>"
                     data-item-condition="<?php echo esc_attr( $log->item_condition ?? '' ); ?>"
+                    data-filter="<?php echo esc_attr( strtolower( ( $log->borrower_full_name ?? $log->borrower_name ?? '' ) . ' ' . ( $log->notes ?? '' ) ) ); ?>"
+                    data-status-mb="<?php echo $log->date_returned ? 'returned' : 'open'; ?>"
                 >
                     <td><?php echo (int) $log->id; ?></td>
                     <td>
@@ -109,4 +128,6 @@ if ( ! defined( 'ABSPATH' ) ) {
             <?php endforeach; ?>
         </tbody>
     </table>
+    </div><!-- #xen-meta-box-history-wrap -->
+    <div id="xen-meta-box-history-pagination" style="margin-top:.5rem;display:flex;gap:.35rem;flex-wrap:wrap;align-items:center;"></div>
 <?php endif; ?>

@@ -126,9 +126,9 @@ if ( '' !== $view_entity ) {
             </div>
         </div>
 
-        <!-- Associated WP accounts (informational only) -->
+        <!-- Associated WP accounts (informational only — hidden by default) -->
         <?php if ( ! empty( $associated_users ) ) : ?>
-        <div class="xen-entity-accounts">
+        <div class="xen-entity-accounts" style="display:none;">
             <h3 class="xen-entity-accounts__heading">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 <?php esc_html_e( 'Associated WP Accounts', 'xen-inventory' ); ?>
@@ -147,7 +147,7 @@ if ( '' !== $view_entity ) {
         <!-- Borrow History -->
         <div class="xen-section-heading">
             <h2><?php esc_html_e( 'Borrow History', 'xen-inventory' ); ?></h2>
-            <span class="xen-section-heading__count"><?php echo (int) $total; ?></span>
+            <span class="xen-section-heading__count" id="xen-detail-history-count"><?php echo (int) $total; ?></span>
         </div>
 
         <?php if ( empty( $logs ) ) : ?>
@@ -156,7 +156,30 @@ if ( '' !== $view_entity ) {
                 <p><?php esc_html_e( 'No borrow history for this entity.', 'xen-inventory' ); ?></p>
             </div>
         <?php else : ?>
-        <div class="xen-table-wrap">
+
+        <!-- Filter bar -->
+        <div class="xen-borrowers-toolbar" style="margin-bottom:.75rem;">
+            <input
+                type="search"
+                id="xen-detail-history-search"
+                class="xen-borrowers-search"
+                placeholder="<?php esc_attr_e( 'Search item or notes…', 'xen-inventory' ); ?>"
+                aria-label="<?php esc_attr_e( 'Filter borrow history', 'xen-inventory' ); ?>"
+            >
+            <select id="xen-detail-history-action" class="xen-borrowers-filter-select" aria-label="<?php esc_attr_e( 'Filter by action', 'xen-inventory' ); ?>">
+                <option value=""><?php esc_html_e( 'All Actions', 'xen-inventory' ); ?></option>
+                <option value="borrowed"><?php esc_html_e( 'Borrowed', 'xen-inventory' ); ?></option>
+                <option value="returned"><?php esc_html_e( 'Returned', 'xen-inventory' ); ?></option>
+            </select>
+            <select id="xen-detail-history-status" class="xen-borrowers-filter-select" aria-label="<?php esc_attr_e( 'Filter by status', 'xen-inventory' ); ?>">
+                <option value=""><?php esc_html_e( 'All Statuses', 'xen-inventory' ); ?></option>
+                <option value="open"><?php esc_html_e( 'Open', 'xen-inventory' ); ?></option>
+                <option value="returned"><?php esc_html_e( 'Returned', 'xen-inventory' ); ?></option>
+                <option value="overdue"><?php esc_html_e( 'Overdue', 'xen-inventory' ); ?></option>
+            </select>
+        </div>
+
+        <div id="xen-borrower-detail-history-wrap" class="xen-table-wrap">
             <table class="wp-list-table widefat fixed striped xen-log-table">
                 <thead>
                     <tr>
@@ -171,7 +194,7 @@ if ( '' !== $view_entity ) {
                         <th><?php esc_html_e( 'Actions',    'xen-inventory' ); ?></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="xen-borrower-detail-history-tbody">
                 <?php foreach ( $logs as $log ) :
                     $due_time   = $log->date_due ? strtotime( $log->date_due ) : null;
                     $is_overdue = ! $log->date_returned && $due_time && $due_time < time();
@@ -187,7 +210,7 @@ if ( '' !== $view_entity ) {
                         $status_class = 'open';
                     }
                 ?>
-                    <tr class="xen-history-row"
+                    <tr class="xen-history-row xen-detail-history-row"
                         style="cursor:pointer;"
                         title="<?php esc_attr_e( 'Double-click to view full details', 'xen-inventory' ); ?>"
                         data-log-id="<?php echo (int) $log->id; ?>"
@@ -204,6 +227,8 @@ if ( '' !== $view_entity ) {
                         data-notes="<?php echo esc_attr( $log->notes ?? '' ); ?>"
                         data-return-notes="<?php echo esc_attr( $log->return_notes ?? '' ); ?>"
                         data-item-condition="<?php echo esc_attr( $log->item_condition ?? '' ); ?>"
+                        data-filter="<?php echo esc_attr( strtolower( ( $log->item_title ?? '' ) . ' ' . ( $log->notes ?? '' ) ) ); ?>"
+                        data-status-filter="<?php echo esc_attr( $status_class ); ?>"
                     >
                         <td>
                             <?php if ( $log->item_id ) : ?>
@@ -267,7 +292,10 @@ if ( '' !== $view_entity ) {
                 <?php endforeach; ?>
                 </tbody>
             </table>
-        </div><!-- .xen-table-wrap -->
+        </div><!-- #xen-borrower-detail-history-wrap -->
+
+        <div id="xen-borrower-detail-history-pagination" style="margin-top:.75rem;display:flex;gap:.35rem;flex-wrap:wrap;align-items:center;"></div>
+
         <?php endif; ?>
 
     </div><!-- .wrap -->
@@ -281,6 +309,19 @@ if ( '' !== $view_entity ) {
     $borrowers      = \XenInventory\Models\InventoryLog::get_borrowers_summary();
     $date_fmt       = get_option( 'date_format' );
     $total_entities = count( $borrowers );
+
+    // Build a map of entity_key → active borrow records for the dblclick quick-view modal.
+    $all_active_borrows = \XenInventory\Models\InventoryLog::get_active_borrows_all_entities();
+    $active_by_entity   = [];
+    foreach ( $all_active_borrows as $ab ) {
+        $active_by_entity[ $ab->entity_key ][] = [
+            'id'         => (int) $ab->id,
+            'item_title' => $ab->item_title ?? '',
+            'qty'        => (int) $ab->quantity,
+            'date_due'   => $ab->date_due ?? '',
+            'notes'      => $ab->notes ?? '',
+        ];
+    }
     ?>
 
     <div class="wrap xen-admin-wrap xen-borrowers-wrap">
@@ -368,8 +409,20 @@ if ( '' !== $view_entity ) {
                 if ( (int) $row->active_borrows === 0 && (int) $row->returned_borrows > 0 ) $status_flags .= ' returned';
             ?>
                 <tr
+                    class="xen-borrowers-list-row"
+                    style="cursor:pointer;"
+                    title="<?php esc_attr_e( 'Double-click to view borrower summary', 'xen-inventory' ); ?>"
+                    data-entity-key="<?php echo esc_attr( $row->entity_key ); ?>"
+                    data-display-name="<?php echo esc_attr( $row->display_name ); ?>"
+                    data-contact="<?php echo esc_attr( $row->borrower_contact ?? '' ); ?>"
+                    data-total="<?php echo (int) $row->total_borrows; ?>"
+                    data-active="<?php echo (int) $row->active_borrows; ?>"
+                    data-overdue="<?php echo (int) $row->overdue_borrows; ?>"
+                    data-returned="<?php echo (int) $row->returned_borrows; ?>"
+                    data-last-borrowed="<?php echo esc_attr( $row->last_borrowed ?? '' ); ?>"
                     data-search="<?php echo esc_attr( strtolower( $row->display_name . ' ' . ( $row->borrower_contact ?? '' ) ) ); ?>"
                     data-status="<?php echo esc_attr( trim( $status_flags ) ); ?>"
+                    data-active-borrows="<?php echo esc_attr( wp_json_encode( $active_by_entity[ $row->entity_key ] ?? [] ) ); ?>"
                 >
                     <td>
                         <div class="xen-entity-name-cell">
@@ -416,27 +469,92 @@ if ( '' !== $view_entity ) {
 
 <script>
 ( function () {
+    var PER_PAGE     = 20;
+    var currentPage  = 1;
+    var visibleRows  = [];
     var searchInput  = document.getElementById( 'xen-borrower-search' );
     var statusSelect = document.getElementById( 'xen-borrower-status-filter' );
+    var tbody        = document.querySelector( '#xen-borrowers-table tbody' );
+
+    // Create pagination container.
+    var paginationEl = document.createElement( 'div' );
+    paginationEl.id  = 'xen-borrowers-pagination';
+    paginationEl.style.cssText = 'margin-top:.75rem;display:flex;gap:.35rem;flex-wrap:wrap;align-items:center;';
+    var tableWrap = document.querySelector( '.xen-table-wrap' );
+    if ( tableWrap ) { tableWrap.parentNode.insertBefore( paginationEl, tableWrap.nextSibling ); }
+
+    function getAllRows() {
+        return tbody ? Array.prototype.slice.call( tbody.querySelectorAll( 'tr' ) ) : [];
+    }
+
+    function renderPagination() {
+        var totalPages = Math.ceil( visibleRows.length / PER_PAGE ) || 1;
+        paginationEl.innerHTML = '';
+
+        if ( totalPages <= 1 ) { return; }
+
+        function makeBtn( label, page, disabled, active ) {
+            var btn = document.createElement( 'button' );
+            btn.type = 'button';
+            btn.textContent = label;
+            btn.className = 'button button-small' + ( active ? ' button-primary' : '' );
+            btn.disabled = disabled;
+            btn.addEventListener( 'click', function () {
+                currentPage = page;
+                applyPage();
+            } );
+            return btn;
+        }
+
+        paginationEl.appendChild( makeBtn( '«', 1, currentPage === 1, false ) );
+        paginationEl.appendChild( makeBtn( '‹', currentPage - 1, currentPage === 1, false ) );
+
+        var start = Math.max( 1, currentPage - 2 );
+        var end   = Math.min( totalPages, currentPage + 2 );
+        for ( var p = start; p <= end; p++ ) {
+            paginationEl.appendChild( makeBtn( p, p, false, p === currentPage ) );
+        }
+
+        paginationEl.appendChild( makeBtn( '›', currentPage + 1, currentPage === totalPages, false ) );
+        paginationEl.appendChild( makeBtn( '»', totalPages, currentPage === totalPages, false ) );
+
+        var info = document.createElement( 'span' );
+        info.style.cssText = 'font-size:.8125rem;color:#666;margin-left:.5rem;';
+        info.textContent = 'Page ' + currentPage + ' of ' + totalPages + ' (' + visibleRows.length + ' entities)';
+        paginationEl.appendChild( info );
+    }
+
+    function applyPage() {
+        var start = ( currentPage - 1 ) * PER_PAGE;
+        var end   = start + PER_PAGE;
+        getAllRows().forEach( function ( row ) { row.style.display = 'none'; } );
+        visibleRows.forEach( function ( row, i ) {
+            row.style.display = ( i >= start && i < end ) ? '' : 'none';
+        } );
+        renderPagination();
+    }
 
     function applyFilters() {
         var q      = searchInput  ? searchInput.value.toLowerCase().trim()  : '';
         var status = statusSelect ? statusSelect.value.toLowerCase().trim() : '';
-        var rows   = document.querySelectorAll( '#xen-borrowers-table tbody tr' );
 
-        rows.forEach( function ( row ) {
-            var haystack    = ( row.dataset.search || '' );
-            var rowStatus   = ( row.dataset.status || '' );
-
+        visibleRows = getAllRows().filter( function ( row ) {
+            var haystack  = ( row.dataset.search || '' );
+            var rowStatus = ( row.dataset.status || '' );
             var matchSearch = ! q      || haystack.indexOf( q ) > -1;
             var matchStatus = ! status || rowStatus.indexOf( status ) > -1;
-
-            row.style.display = ( matchSearch && matchStatus ) ? '' : 'none';
+            return matchSearch && matchStatus;
         } );
+
+        currentPage = 1;
+        applyPage();
     }
 
     if ( searchInput )  searchInput.addEventListener( 'input',  applyFilters );
     if ( statusSelect ) statusSelect.addEventListener( 'change', applyFilters );
+
+    // Initial render.
+    applyFilters();
 } )();
 </script>
 

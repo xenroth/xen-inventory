@@ -286,11 +286,29 @@ $check_update_url = wp_nonce_url(
                         <th><?php esc_html_e( 'Action',   'xen-inventory' ); ?></th>
                         <th><?php esc_html_e( 'Date',     'xen-inventory' ); ?></th>
                         <th><?php esc_html_e( 'Status',   'xen-inventory' ); ?></th>
+                        <th><?php esc_html_e( 'Actions',  'xen-inventory' ); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ( $recent as $entry ) : ?>
-                        <tr>
+                        <tr class="xen-history-row"
+                            style="cursor:pointer;"
+                            title="<?php esc_attr_e( 'Double-click to view details', 'xen-inventory' ); ?>"
+                            data-log-id="<?php echo (int) $entry->id; ?>"
+                            data-item-title="<?php echo esc_attr( $entry->item_title ?? '' ); ?>"
+                            data-borrower-name="<?php echo esc_attr( $entry->borrower_name ?? '' ); ?>"
+                            data-borrower-full-name="<?php echo esc_attr( $entry->borrower_full_name ?? '' ); ?>"
+                            data-borrower-contact="<?php echo esc_attr( $entry->borrower_contact ?? '' ); ?>"
+                            data-borrow-tags="<?php echo esc_attr( $entry->borrow_tags ?? '' ); ?>"
+                            data-action="<?php echo esc_attr( $entry->action ?? '' ); ?>"
+                            data-qty="<?php echo (int) $entry->quantity; ?>"
+                            data-date-borrowed="<?php echo esc_attr( $entry->date_borrowed ?? '' ); ?>"
+                            data-date-due="<?php echo esc_attr( $entry->date_due ?? '' ); ?>"
+                            data-date-returned="<?php echo esc_attr( $entry->date_returned ?? '' ); ?>"
+                            data-notes="<?php echo esc_attr( $entry->notes ?? '' ); ?>"
+                            data-return-notes="<?php echo esc_attr( $entry->return_notes ?? '' ); ?>"
+                            data-item-condition="<?php echo esc_attr( $entry->item_condition ?? '' ); ?>"
+                        >
                             <td>
                                 <a href="<?php echo esc_url( get_edit_post_link( (int) $entry->item_id ) ); ?>">
                                     <?php echo esc_html( $entry->item_title ); ?>
@@ -311,6 +329,28 @@ $check_update_url = wp_nonce_url(
                                     <span class="xen-badge xen-badge--overdue"><?php esc_html_e( 'Overdue', 'xen-inventory' ); ?></span>
                                 <?php else : ?>
                                     <span class="xen-badge xen-badge--open"><?php esc_html_e( 'Open', 'xen-inventory' ); ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="xen-log-actions-cell">
+                                <button
+                                    type="button"
+                                    class="button button-small xen-edit-log"
+                                    data-log-id="<?php echo (int) $entry->id; ?>"
+                                    data-date-due="<?php echo esc_attr( $entry->date_due ?? '' ); ?>"
+                                    data-date-returned="<?php echo esc_attr( $entry->date_returned ?? '' ); ?>"
+                                    data-notes="<?php echo esc_attr( $entry->notes ?? '' ); ?>"
+                                    aria-label="<?php esc_attr_e( 'Edit log entry', 'xen-inventory' ); ?>"
+                                ><?php esc_html_e( 'Edit', 'xen-inventory' ); ?></button>
+                                <?php if ( ! $entry->date_returned && 'borrowed' === $entry->action ) : ?>
+                                <button
+                                    type="button"
+                                    class="button button-small button-primary xen-return-log"
+                                    data-log-id="<?php echo (int) $entry->id; ?>"
+                                    data-qty="<?php echo (int) $entry->quantity; ?>"
+                                    data-item-title="<?php echo esc_attr( $entry->item_title ?? '' ); ?>"
+                                    aria-label="<?php esc_attr_e( 'Mark as returned', 'xen-inventory' ); ?>"
+                                    style="margin-top:2px;"
+                                ><?php esc_html_e( 'Return', 'xen-inventory' ); ?></button>
                                 <?php endif; ?>
                             </td>
                         </tr>

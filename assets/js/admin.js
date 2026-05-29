@@ -99,6 +99,13 @@
             '      <input type="number" id="xen-admin-return-qty" min="1" style="width:6rem;padding:.3rem .5rem;border:1px solid #ccc;border-radius:4px;" />' +
             '    </div>' +
             '    <div style="margin-bottom:1rem;">' +
+            '      <label for="xen-admin-return-date" style="display:block;font-weight:600;font-size:.875rem;margin-bottom:.3rem;">Return Date &amp; Time <small style="font-weight:400;color:#666;">(optional, defaults to now)</small></label>' +
+            '      <div style="display:flex;gap:.4rem;align-items:center;">' +
+            '        <input type="datetime-local" id="xen-admin-return-date" style="padding:.3rem .5rem;border:1px solid #ccc;border-radius:4px;" />' +
+            '        <button type="button" id="xen-admin-return-date-now" class="button button-small" title="Set to current date &amp; time">Now</button>' +
+            '      </div>' +
+            '    </div>' +
+            '    <div style="margin-bottom:1rem;">' +
             '      <label for="xen-admin-return-condition" style="display:block;font-weight:600;font-size:.875rem;margin-bottom:.3rem;">Item Condition on Return <span style="color:#c00;" aria-hidden="true">*</span></label>' +
             '      <select id="xen-admin-return-condition" required style="width:100%;padding:.4rem .5rem;border:1px solid #ccc;border-radius:4px;">' +
             '        <option value="">— Select condition —</option>' +
@@ -126,6 +133,15 @@
 
         $( document ).on( 'keydown.xenAdminReturnModal', function ( e ) {
             if ( 'Escape' === e.key ) { $( '#xen-admin-return-modal' ).css( 'display', 'none' ); }
+        } );
+
+        $( document ).on( 'click', '#xen-admin-return-date-now', function () {
+            var now = new Date();
+            var pad = function ( n ) { return String( n ).padStart( 2, '0' ); };
+            $( '#xen-admin-return-date' ).val(
+                now.getFullYear() + '-' + pad( now.getMonth() + 1 ) + '-' + pad( now.getDate() ) +
+                'T' + pad( now.getHours() ) + ':' + pad( now.getMinutes() )
+            );
         } );
 
         $( document ).on( 'click', '#xen-admin-return-submit', function () {
@@ -167,6 +183,7 @@
                 qty_returned:   qtyReturned,
                 return_notes:   notes,
                 item_condition: condition,
+                date_returned:  $( '#xen-admin-return-date' ).val() || '',
             } )
             .done( function ( response ) {
                 if ( response.success ) {
@@ -205,6 +222,7 @@
         $( '#xen-admin-return-item-name' ).text( itemTitle || 'Log #' + logId );
         $( '#xen-admin-return-condition' ).val( '' );
         $( '#xen-admin-return-notes' ).val( '' );
+        $( '#xen-admin-return-date' ).val( '' );
         $( '#xen-admin-return-status' ).text( '' );
         $( '#xen-admin-return-submit' ).prop( 'disabled', false ).text( 'Confirm Return' );
         if ( totalQty > 1 ) {
@@ -518,5 +536,275 @@
 
         showDetailModal( 'Audit Log Details', rows );
     } );
+
+    // -----------------------------------------------------------------------
+    // Double-click on borrower list rows → show borrower summary modal.
+    // -----------------------------------------------------------------------
+
+    function ensureBorrowerModal() {
+        if ( $( '#xen-borrower-modal' ).length ) { return; }
+
+        $( 'body' ).append(
+            '<div id="xen-borrower-modal" style="display:none;position:fixed;inset:0;z-index:100065;align-items:center;justify-content:center;" role="dialog" aria-modal="true">' +
+            '  <div id="xen-borrower-modal-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>' +
+            '  <div style="position:relative;background:#fff;border-radius:6px;padding:1.5rem 1.75rem;width:540px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.28);">' +
+            '    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;border-bottom:2px solid #f0f0f0;padding-bottom:.75rem;">' +
+            '      <h3 id="xen-borrower-modal-name" style="margin:0;font-size:1rem;font-weight:700;"></h3>' +
+            '      <button type="button" id="xen-borrower-modal-close" class="button" style="min-width:auto;padding:.1rem .5rem;font-size:1.1rem;line-height:1.6;" aria-label="Close">&times;</button>' +
+            '    </div>' +
+            '    <div id="xen-borrower-modal-body"></div>' +
+            '  </div>' +
+            '</div>'
+        );
+
+        $( document ).on( 'click', '#xen-borrower-modal-close, #xen-borrower-modal-backdrop', function () {
+            $( '#xen-borrower-modal' ).css( 'display', 'none' );
+        } );
+
+        $( document ).on( 'keydown.xenBorrowerModal', function ( e ) {
+            if ( 'Escape' === e.key ) { $( '#xen-borrower-modal' ).css( 'display', 'none' ); }
+        } );
+    }
+
+    function showBorrowerModal( data, activeBorrows, detailUrl ) {
+        ensureBorrowerModal();
+        $( '#xen-borrower-modal-name' ).text( data.displayName || '(unknown)' );
+
+        var html = '<table style="width:100%;border-collapse:collapse;font-size:.875rem;margin-bottom:1rem;">';
+        function row( label, val ) {
+            if ( ! val && val !== 0 ) { return; }
+            html += '<tr style="border-bottom:1px solid #eee;">' +
+                    '<th style="text-align:left;padding:.4rem .5rem .4rem 0;width:40%;font-weight:600;color:#555;vertical-align:top;">' + escHtmlStr( label ) + '</th>' +
+                    '<td style="padding:.4rem 0;vertical-align:top;">' + escHtmlStr( String( val ) ) + '</td>' +
+                    '</tr>';
+        }
+        row( 'Contact',      data.contact );
+        row( 'Total Borrows', data.total );
+        row( 'Active',        data.active );
+        row( 'Overdue',       data.overdue );
+        row( 'Returned',      data.returned );
+        row( 'Last Borrowed', data.lastBorrowed );
+        html += '</table>';
+
+        if ( activeBorrows && activeBorrows.length ) {
+            html += '<h4 style="margin:0 0 .5rem;font-size:.875rem;font-weight:700;">Active Borrows</h4>';
+            html += '<table style="width:100%;border-collapse:collapse;font-size:.8125rem;">' +
+                    '<thead><tr style="background:#f9f9f9;">' +
+                    '<th style="text-align:left;padding:.35rem .4rem;border-bottom:1px solid #ddd;">Item</th>' +
+                    '<th style="text-align:center;padding:.35rem .4rem;border-bottom:1px solid #ddd;">Qty</th>' +
+                    '<th style="text-align:left;padding:.35rem .4rem;border-bottom:1px solid #ddd;">Due</th>' +
+                    '<th style="text-align:left;padding:.35rem .4rem;border-bottom:1px solid #ddd;">Actions</th>' +
+                    '</tr></thead><tbody>';
+            activeBorrows.forEach( function ( b ) {
+                var bId  = parseInt( b.id,  10 ) || 0;
+                var bQty = parseInt( b.qty, 10 ) || 1;
+                html += '<tr style="border-bottom:1px solid #f0f0f0;">' +
+                        '<td style="padding:.35rem .4rem;">' + escHtmlStr( b.item_title || '—' ) + '</td>' +
+                        '<td style="text-align:center;padding:.35rem .4rem;">' + bQty + '</td>' +
+                        '<td style="padding:.35rem .4rem;">' + escHtmlStr( b.date_due || '—' ) + '</td>' +
+                        '<td style="padding:.35rem .4rem;">' +
+                        '<button type="button" class="button button-small button-primary xen-return-log" ' +
+                        'data-log-id="' + bId + '" data-qty="' + bQty + '" ' +
+                        'data-item-title="' + escHtmlStr( b.item_title || '' ) + '" ' +
+                        'style="margin-right:.3rem;" onclick="jQuery(\'#xen-borrower-modal\').css(\'display\',\'none\');">Return</button>' +
+                        '</td>' +
+                        '</tr>';
+            } );
+            html += '</tbody></table>';
+        }
+
+        html += '<div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid #eee;">' +
+                '<a href="' + escHtmlStr( detailUrl ) + '" class="button">' +
+                'View Full History &rarr;</a></div>';
+
+        $( '#xen-borrower-modal-body' ).html( html );
+        $( '#xen-borrower-modal' ).css( 'display', 'flex' );
+    }
+
+    $( document ).on( 'dblclick', '.xen-borrowers-list-row', function () {
+        var $row    = $( this );
+        var data    = {
+            displayName:  $row.data( 'display-name' ) || '—',
+            contact:      $row.data( 'contact' )      || '',
+            total:        $row.data( 'total' )         || 0,
+            active:       $row.data( 'active' )        || 0,
+            overdue:      $row.data( 'overdue' )       || 0,
+            returned:     $row.data( 'returned' )      || 0,
+            lastBorrowed: $row.data( 'last-borrowed' ) || '',
+        };
+        var activeBorrows = [];
+        try {
+            var raw = $row.data( 'active-borrows' );
+            if ( typeof raw === 'string' && raw ) {
+                activeBorrows = JSON.parse( raw );
+            } else if ( Array.isArray( raw ) ) {
+                activeBorrows = raw;
+            }
+        } catch ( ex ) {}
+
+        var entityKey = $row.data( 'entity-key' ) || $row.data( 'display-name' ) || '';
+        var detailUrl = 'admin.php?page=xen-borrowers&xen_entity=' + encodeURIComponent( entityKey );
+        showBorrowerModal( data, activeBorrows, detailUrl );
+    } );
+
+    // -----------------------------------------------------------------------
+    // Borrower detail view history — client-side filter + pagination.
+    // -----------------------------------------------------------------------
+
+    ( function () {
+        var PER_PAGE    = 20;
+        var currentPage = 1;
+        var visibleRows = [];
+        var tbody       = document.getElementById( 'xen-borrower-detail-history-tbody' );
+        var paginEl     = document.getElementById( 'xen-borrower-detail-history-pagination' );
+        var countEl     = document.getElementById( 'xen-detail-history-count' );
+        var searchEl    = document.getElementById( 'xen-detail-history-search' );
+        var actionEl    = document.getElementById( 'xen-detail-history-action' );
+        var statusEl    = document.getElementById( 'xen-detail-history-status' );
+
+        if ( ! tbody ) { return; }
+
+        function allRows() {
+            return Array.prototype.slice.call( tbody.querySelectorAll( 'tr' ) );
+        }
+
+        function renderPagination() {
+            if ( ! paginEl ) { return; }
+            var totalPages = Math.ceil( visibleRows.length / PER_PAGE ) || 1;
+            paginEl.innerHTML = '';
+            if ( totalPages <= 1 ) { return; }
+            function mkBtn( label, pg, disabled, active ) {
+                var btn = document.createElement( 'button' );
+                btn.type = 'button';
+                btn.textContent = label;
+                btn.className = 'button button-small' + ( active ? ' button-primary' : '' );
+                btn.disabled = disabled;
+                btn.addEventListener( 'click', function () { currentPage = pg; applyPage(); } );
+                return btn;
+            }
+            paginEl.appendChild( mkBtn( '«', 1, currentPage === 1, false ) );
+            paginEl.appendChild( mkBtn( '‹', currentPage - 1, currentPage === 1, false ) );
+            var start = Math.max( 1, currentPage - 2 );
+            var end   = Math.min( totalPages, currentPage + 2 );
+            for ( var p = start; p <= end; p++ ) {
+                paginEl.appendChild( mkBtn( p, p, false, p === currentPage ) );
+            }
+            paginEl.appendChild( mkBtn( '›', currentPage + 1, currentPage === totalPages, false ) );
+            paginEl.appendChild( mkBtn( '»', totalPages, currentPage === totalPages, false ) );
+            var info = document.createElement( 'span' );
+            info.style.cssText = 'font-size:.8125rem;color:#666;margin-left:.5rem;';
+            info.textContent = 'Page ' + currentPage + ' of ' + totalPages + ' (' + visibleRows.length + ' records)';
+            paginEl.appendChild( info );
+        }
+
+        function applyPage() {
+            var start = ( currentPage - 1 ) * PER_PAGE;
+            var end   = start + PER_PAGE;
+            allRows().forEach( function ( r ) { r.style.display = 'none'; } );
+            visibleRows.forEach( function ( r, i ) {
+                r.style.display = ( i >= start && i < end ) ? '' : 'none';
+            } );
+            if ( countEl ) { countEl.textContent = visibleRows.length; }
+            renderPagination();
+        }
+
+        function applyFilters() {
+            var q       = searchEl ? searchEl.value.toLowerCase().trim() : '';
+            var action  = actionEl ? actionEl.value.toLowerCase().trim() : '';
+            var status  = statusEl ? statusEl.value.toLowerCase().trim() : '';
+
+            visibleRows = allRows().filter( function ( r ) {
+                var matchQ      = ! q      || ( r.dataset.filter  || '' ).indexOf( q )      > -1;
+                var matchAction = ! action || ( r.dataset.action  || '' ) === action;
+                var matchStatus = ! status || ( r.dataset.statusFilter || '' ) === status;
+                return matchQ && matchAction && matchStatus;
+            } );
+
+            currentPage = 1;
+            applyPage();
+        }
+
+        if ( searchEl ) { searchEl.addEventListener( 'input',  applyFilters ); }
+        if ( actionEl ) { actionEl.addEventListener( 'change', applyFilters ); }
+        if ( statusEl ) { statusEl.addEventListener( 'change', applyFilters ); }
+        applyFilters();
+    } )();
+
+    // -----------------------------------------------------------------------
+    // Meta-box borrow history — client-side filter + pagination.
+    // -----------------------------------------------------------------------
+
+    ( function () {
+        var PER_PAGE    = 15;
+        var currentPage = 1;
+        var visibleRows = [];
+        var tbody       = document.getElementById( 'xen-meta-box-history-tbody' );
+        var paginEl     = document.getElementById( 'xen-meta-box-history-pagination' );
+        var searchEl    = document.getElementById( 'xen-meta-box-history-search' );
+        var statusEl    = document.getElementById( 'xen-meta-box-history-status' );
+
+        if ( ! tbody ) { return; }
+
+        function allRows() {
+            return Array.prototype.slice.call( tbody.querySelectorAll( 'tr' ) );
+        }
+
+        function renderPagination() {
+            if ( ! paginEl ) { return; }
+            var totalPages = Math.ceil( visibleRows.length / PER_PAGE ) || 1;
+            paginEl.innerHTML = '';
+            if ( totalPages <= 1 ) { return; }
+            function mkBtn( label, pg, disabled, active ) {
+                var btn = document.createElement( 'button' );
+                btn.type = 'button';
+                btn.textContent = label;
+                btn.className = 'button button-small' + ( active ? ' button-primary' : '' );
+                btn.disabled = disabled;
+                btn.addEventListener( 'click', function () { currentPage = pg; applyPage(); } );
+                return btn;
+            }
+            paginEl.appendChild( mkBtn( '«', 1, currentPage === 1, false ) );
+            paginEl.appendChild( mkBtn( '‹', currentPage - 1, currentPage === 1, false ) );
+            var start = Math.max( 1, currentPage - 2 );
+            var end   = Math.min( totalPages, currentPage + 2 );
+            for ( var p = start; p <= end; p++ ) {
+                paginEl.appendChild( mkBtn( p, p, false, p === currentPage ) );
+            }
+            paginEl.appendChild( mkBtn( '›', currentPage + 1, currentPage === totalPages, false ) );
+            paginEl.appendChild( mkBtn( '»', totalPages, currentPage === totalPages, false ) );
+            var info = document.createElement( 'span' );
+            info.style.cssText = 'font-size:.8125rem;color:#666;margin-left:.5rem;';
+            info.textContent = 'Page ' + currentPage + ' of ' + totalPages + ' (' + visibleRows.length + ' records)';
+            paginEl.appendChild( info );
+        }
+
+        function applyPage() {
+            var start = ( currentPage - 1 ) * PER_PAGE;
+            var end   = start + PER_PAGE;
+            allRows().forEach( function ( r ) { r.style.display = 'none'; } );
+            visibleRows.forEach( function ( r, i ) {
+                r.style.display = ( i >= start && i < end ) ? '' : 'none';
+            } );
+            renderPagination();
+        }
+
+        function applyFilters() {
+            var q      = searchEl ? searchEl.value.toLowerCase().trim() : '';
+            var status = statusEl ? statusEl.value.toLowerCase().trim() : '';
+
+            visibleRows = allRows().filter( function ( r ) {
+                var matchQ      = ! q      || ( r.dataset.filter  || '' ).indexOf( q )      > -1;
+                var matchStatus = ! status || ( r.dataset.statusMb || '' ) === status;
+                return matchQ && matchStatus;
+            } );
+
+            currentPage = 1;
+            applyPage();
+        }
+
+        if ( searchEl ) { searchEl.addEventListener( 'input',  applyFilters ); }
+        if ( statusEl ) { statusEl.addEventListener( 'change', applyFilters ); }
+        applyFilters();
+    } )();
 
 } )( jQuery );

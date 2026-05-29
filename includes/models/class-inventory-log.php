@@ -74,12 +74,14 @@ class InventoryLog {
      * @param  string $item_condition Item condition slug: good | slight_damage | total_damage.
      * @return bool
      */
-    public static function close_log( int $log_id, string $return_notes = '', string $item_condition = '' ): bool {
+    public static function close_log( int $log_id, string $return_notes = '', string $item_condition = '', string $date_returned = '' ): bool {
         global $wpdb;
+
+        $use_date = $date_returned ?: current_time( 'mysql', true );
 
         // Build the SET clause dynamically so we only include item_condition when provided.
         $set_sql = 'date_returned = %s, return_notes = %s';
-        $args    = [ current_time( 'mysql', true ), $return_notes ];
+        $args    = [ $use_date, $return_notes ];
         if ( '' !== $item_condition ) {
             $set_sql .= ', item_condition = %s';
             $args[]   = $item_condition;
@@ -128,7 +130,7 @@ class InventoryLog {
      * @param  string $notes        Optional return note.
      * @return bool   True on success, false on DB error or invalid input.
      */
-    public static function partial_return( int $log_id, int $qty_returned, string $return_notes = '', string $item_condition = '' ): bool {
+    public static function partial_return( int $log_id, int $qty_returned, string $return_notes = '', string $item_condition = '', string $date_returned = '' ): bool {
         global $wpdb;
 
         if ( $qty_returned < 1 ) {
@@ -152,7 +154,7 @@ class InventoryLog {
 
         // Cap at original quantity — can't return more than was borrowed.
         if ( $qty_returned >= $original_qty ) {
-            return self::close_log( $log_id, $return_notes, $item_condition );
+            return self::close_log( $log_id, $return_notes, $item_condition, $date_returned );
         }
 
         // Reduce the outstanding quantity on the original row.
@@ -184,7 +186,7 @@ class InventoryLog {
                 'quantity'           => $qty_returned,
                 'date_borrowed'      => $log->date_borrowed,
                 'date_due'           => $log->date_due,
-                'date_returned'      => current_time( 'mysql', true ),
+                'date_returned'      => $date_returned ?: current_time( 'mysql', true ),
                 'notes'              => '',
                 'return_notes'       => $return_notes,
                 'item_condition'     => '' !== $item_condition ? $item_condition : null,
@@ -475,6 +477,30 @@ class InventoryLog {
              ) stats
              LEFT JOIN {$table} latest ON latest.id = stats.latest_id
              ORDER BY stats.last_borrowed DESC"
+        );
+    }
+
+    /**
+     * Get all currently open (not-returned) borrow records across all entities.
+     *
+     * Returns one row per open borrow, with the normalised entity_key attached,
+     * so callers can quickly build an entity → active-borrows map.
+     *
+     * @return array<int, object>
+     */
+    public static function get_active_borrows_all_entities(): array {
+        global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+        return $wpdb->get_results(
+            "SELECT l.id, l.item_id, l.action, l.quantity, l.date_borrowed, l.date_due,
+                    l.notes, l.borrower_name, l.borrower_full_name, l.borrower_contact,
+                    p.post_title AS item_title,
+                    LOWER( TRIM( COALESCE( NULLIF( TRIM( l.borrower_full_name ), '' ), NULLIF( TRIM( l.borrower_name ), '' ), '(unknown)' ) ) ) AS entity_key
+             FROM " . self::table() . " l
+             LEFT JOIN " . $wpdb->posts . " p ON p.ID = l.item_id
+             WHERE l.action = 'borrowed' AND l.date_returned IS NULL
+             ORDER BY l.date_due ASC, l.date_borrowed DESC"
         );
     }
 
