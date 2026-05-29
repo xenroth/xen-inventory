@@ -159,10 +159,18 @@ $check_update_url = wp_nonce_url(
                     ?>
                 </h3>
                 <ul class="xen-whats-new-list">
-                    <li><?php esc_html_e( 'Borrow calendar now shows returned items in green, partially returned in amber, and still-open borrows in red — colour-coded for instant status recognition.', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Calendar history fix: returned borrow records are no longer hidden when browsing previous months — they stay visible on the original borrow date.', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Day-modal status chip now shows "Active", "Partially Returned", or "Returned" with matching colour.', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Calendar Return button now opens a proper modal — collect item condition and mandatory remarks before submitting (fixes silent return failures from the calendar view).', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Borrowed-filter item cards: borrower list is now centred pill-cards that wrap to the next row on overflow instead of cutting off.', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Security: added missing wp_unslash() on all superglobal reads in AJAX handlers and admin filter views.', 'xen-inventory' ); ?></li>
                 </ul>
+                <details style="margin-top:.5rem;">
+                    <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.6.7 changes ▸', 'xen-inventory' ); ?></summary>
+                    <ul class="xen-whats-new-list" style="margin-top:.375rem;">
+                        <li><?php esc_html_e( 'Borrow calendar now shows returned items in green, partially returned in amber, and still-open borrows in red — colour-coded for instant status recognition.', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Calendar history fix: returned borrow records are no longer hidden when browsing previous months — they stay visible on the original borrow date.', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Day-modal status chip now shows "Active", "Partially Returned", or "Returned" with matching colour.', 'xen-inventory' ); ?></li>
+                    </ul>
+                </details>
                 <details style="margin-top:.5rem;">
                     <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.6.6 changes ▸', 'xen-inventory' ); ?></summary>
                     <ul class="xen-whats-new-list" style="margin-top:.375rem;">
