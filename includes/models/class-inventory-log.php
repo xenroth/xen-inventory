@@ -376,26 +376,41 @@ class InventoryLog {
             return [];
         }
 
-        // Overlap logic: fetch any borrow event whose period intersects the
-        // requested date range, not just events that *started* in the range.
+        // Show every 'borrowed' row whose borrow date falls within the
+        // calendar view period, so that returned history always remains
+        // visible on the day it was originally recorded.
         //
-        // An event overlaps [range_start, range_end] when:
-        //   date_borrowed  <= range_end
-        //   AND (date_returned >= range_start OR date_returned IS NULL)
+        // Also include still-open borrows that started before the range
+        // (spanning borrows) so they appear on whichever borrow date is
+        // shown in the partial-week cells at the edges of the view.
         //
-        // This ensures that active borrows which started *before* the current
-        // calendar view still appear as spanning events.
+        // Partial return detection: a correlated sub-query sums the
+        // quantity returned via partial_return() — those rows share the
+        // same item_id, entity key, and date_borrowed as the original
+        // 'borrowed' row.
+
+        $tbl = self::table();
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                'SELECT l.*, p.post_title AS item_title
-                 FROM ' . self::table() . ' l
-                 INNER JOIN ' . $wpdb->posts . " p ON p.ID = l.item_id
-                 WHERE l.date_borrowed <= %s
-                   AND ( l.date_returned >= %s OR l.date_returned IS NULL )
-                   AND l.action = 'borrowed'
+                "SELECT l.*, p.post_title AS item_title,
+                        COALESCE(
+                            ( SELECT SUM(sub.quantity)
+                              FROM {$tbl} sub
+                              WHERE sub.action      = 'returned'
+                                AND sub.item_id     = l.item_id
+                                AND DATE(sub.date_borrowed)  = DATE(l.date_borrowed)
+                                AND LOWER(TRIM(COALESCE(NULLIF(TRIM(sub.borrower_full_name),''),NULLIF(TRIM(sub.borrower_name),''),'(unknown)')))
+                                    = LOWER(TRIM(COALESCE(NULLIF(TRIM(l.borrower_full_name),''),NULLIF(TRIM(l.borrower_name),''),'(unknown)')))
+                            ), 0
+                        ) AS partial_qty_returned
+                 FROM {$tbl} l
+                 INNER JOIN {$wpdb->posts} p ON p.ID = l.item_id
+                 WHERE l.action = 'borrowed'
                    AND p.post_status = 'publish'
+                   AND l.date_borrowed <= %s
+                   AND ( l.date_borrowed >= %s OR l.date_returned IS NULL )
                  ORDER BY l.date_borrowed ASC",
                 $end   . ' 23:59:59',
                 $start . ' 00:00:00'
@@ -403,10 +418,18 @@ class InventoryLog {
         );
 
         $events = [];
-        $now    = current_time( 'mysql', true ); // UTC.
 
         foreach ( $rows as $row ) {
-            $color = 'returned' === $row->action ? '#27ae60' : '#e74c3c';
+            if ( $row->date_returned ) {
+                $return_status = 'returned';
+                $color         = '#16a34a'; // green
+            } elseif ( (int) $row->partial_qty_returned > 0 ) {
+                $return_status = 'partial';
+                $color         = '#d97706'; // amber
+            } else {
+                $return_status = 'open';
+                $color         = '#e74c3c'; // red
+            }
 
             $events[] = [
                 'id'    => (int) $row->id,
@@ -431,6 +454,7 @@ class InventoryLog {
                     'notes'            => $row->notes,
                     'date_due'         => $row->date_due,
                     'date_returned'    => $row->date_returned,
+                    'return_status'    => $return_status,
                 ],
             ];
         }

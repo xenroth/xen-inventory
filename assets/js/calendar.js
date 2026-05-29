@@ -134,10 +134,12 @@
             } else {
                 var html = '<ul class="xen-day-modal__list">';
                 events.forEach( function ( ev ) {
-                    var props     = ev.extendedProps || {};
-                    var isReturned = !! props.date_returned;
-                    var statusCls  = isReturned ? 'returned' : 'borrowed';
-                    var logId      = props.log_id || ev.id || '';
+                    var props        = ev.extendedProps || {};
+                    var returnStatus = props.return_status || ( props.date_returned ? 'returned' : 'open' );
+                    var statusCls    = returnStatus; // 'open' | 'partial' | 'returned'
+                    var statusLabels = { returned: 'Returned', partial: 'Partially Returned', open: 'Active' };
+                    var statusLabel  = statusLabels[ returnStatus ] || 'Active';
+                    var logId        = props.log_id || ev.id || '';
 
                     // Date range label.
                     var startLabel = ev.start
@@ -167,7 +169,7 @@
                         html +=   '<span class="xen-day-modal__item-range">' + escHtml( startLabel ) + '</span>';
                     }
                     html +=       '<span class="xen-day-modal__item-status xen-day-modal__item-status--' + statusCls + '">'
-                                    + escHtml( isReturned ? 'Returned' : 'Active' ) + '</span>';
+                                    + escHtml( statusLabel ) + '</span>';
                     html +=     '</div>';
                     if ( props.notes ) {
                         html += '<p class="xen-day-modal__item-notes">' + escHtml( props.notes ) + '</p>';
@@ -176,7 +178,7 @@
                     if ( parseInt( xenCalendar.canEdit, 10 ) ) {
                         html += '<div class="xen-day-modal__item-actions">';
                         html +=   '<button type="button" class="xen-cal-edit-btn" data-log-id="' + escHtml( logId ) + '">Edit</button>';
-                        if ( ! isReturned ) {
+                        if ( returnStatus !== 'returned' ) {
                             html += '<button type="button" class="xen-cal-return-btn" data-log-id="' + escHtml( logId ) + '" data-qty="' + escHtml( props.quantity || 1 ) + '">Return</button>';
                         }
                         html += '</div>';

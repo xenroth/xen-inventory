@@ -5,6 +5,26 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.6.7 — 2026-05-30 =
+------------------------------------------------------------------------------
+
+== Fixed ==
+* Borrow calendar — returned items now remain visible on their original borrow
+  date when navigating to previous calendar months. Previously the SQL overlap
+  query excluded events whose return date fell before the visible range start,
+  causing historical borrow records to disappear.
+* Borrow calendar — event chips and day-modal status indicators are now
+  colour-coded by return status:
+    - Red   = still borrowed / not yet returned
+    - Amber = partially returned (some units back, remainder still out)
+    - Green = fully returned
+  Previously all events were always shown in red regardless of return status.
+* Day-modal status chip now shows "Active", "Partially Returned", or "Returned"
+  instead of a binary "Active / Returned" label.
+* Return button in the day modal is now correctly hidden for fully-returned
+  events (previously relied on date_returned presence; now uses return_status).
+
+------------------------------------------------------------------------------
 = 1.6.6 — 2026-05-30 =
 ------------------------------------------------------------------------------
 
