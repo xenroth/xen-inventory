@@ -5,6 +5,26 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.6.5 — 2026-05-29 =
+------------------------------------------------------------------------------
+
+== Added ==
+* My Borrow History now has a "Status" dropdown filter (All / Active / Overdue /
+  Returned) alongside the existing text search, making it easy to isolate
+  active or past borrows without scrolling through the full list.
+
+== Fixed ==
+* All borrow-record lists and history tables now display in strict reverse-
+  chronological order (most recent first). The borrowed-filter card list on
+  the inventory display was previously sorted oldest-first.
+* Inventory display — "Borrowed" filter view: when the same entity has
+  multiple open borrow rows for the same item (borrowed at different times),
+  the item card now shows one accumulated row with the total quantity in hand
+  instead of repeating the borrower's name on separate lines. Each underlying
+  borrow transaction is still recorded individually and appears separately in
+  the borrower's personal Borrow History.
+
+------------------------------------------------------------------------------
 = 1.6.4 — 2026-05-29 =
 ------------------------------------------------------------------------------
 

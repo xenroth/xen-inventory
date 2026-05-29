@@ -150,6 +150,9 @@ class Shortcodes {
 
         // When filtering by 'borrowed', build a map of item_id → active borrow rows
         // so the view can display who currently has each item.
+        // Same entity borrowing the same item multiple times is accumulated into one
+        // row (summed quantity, latest due date) for the card display. Each borrow
+        // transaction still appears separately in the borrower's personal history.
         $active_borrowers = [];
         if ( 'borrowed' === $atts['status'] || 'borrowed' === ( $_GET['xen_status'] ?? '' ) ) {
             global $wpdb;
@@ -159,10 +162,38 @@ class Shortcodes {
                 "SELECT item_id, borrower_full_name, borrower_name, borrower_contact, quantity, date_borrowed, date_due
                  FROM {$table}
                  WHERE action = 'borrowed' AND date_returned IS NULL
-                 ORDER BY date_borrowed ASC"
+                 ORDER BY date_borrowed DESC"
             );
+
+            // Accumulate by entity key per item.
+            $entity_map = []; // [ item_id ][ entity_key ] → aggregated stdClass
             foreach ( $active_rows as $row ) {
-                $active_borrowers[ (int) $row->item_id ][] = $row;
+                $item_id    = (int) $row->item_id;
+                $entity_key = strtolower( trim( $row->borrower_full_name ?: $row->borrower_name ?: '(unknown)' ) );
+
+                if ( ! isset( $entity_map[ $item_id ][ $entity_key ] ) ) {
+                    $agg                      = new \stdClass();
+                    $agg->item_id             = $row->item_id;
+                    $agg->borrower_full_name  = $row->borrower_full_name;
+                    $agg->borrower_name       = $row->borrower_name;
+                    $agg->borrower_contact    = $row->borrower_contact;
+                    $agg->quantity            = (int) $row->quantity;
+                    $agg->date_borrowed       = $row->date_borrowed; // earliest (DESC order means first hit is most recent; keep it)
+                    $agg->date_due            = $row->date_due;
+                    $entity_map[ $item_id ][ $entity_key ] = $agg;
+                } else {
+                    $agg           = $entity_map[ $item_id ][ $entity_key ];
+                    $agg->quantity += (int) $row->quantity;
+                    // Keep the latest due date for the accumulated row.
+                    if ( $row->date_due && ( ! $agg->date_due || $row->date_due > $agg->date_due ) ) {
+                        $agg->date_due = $row->date_due;
+                    }
+                }
+            }
+
+            // Flatten to item_id → array of accumulated rows.
+            foreach ( $entity_map as $item_id => $entities ) {
+                $active_borrowers[ $item_id ] = array_values( $entities );
             }
         }
 

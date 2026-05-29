@@ -407,8 +407,14 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                 placeholder="<?php esc_attr_e( 'Filter by item or tags…', 'xen-inventory' ); ?>"
                 aria-label="<?php esc_attr_e( 'Filter borrow history', 'xen-inventory' ); ?>"
                 autocomplete="off"
-                style="flex:1 1 200px;max-width:280px;"
+                style="flex:1 1 160px;max-width:240px;"
             />
+            <select id="xen-history-status-filter" class="xen-select" aria-label="<?php esc_attr_e( 'Filter by status', 'xen-inventory' ); ?>" style="flex:0 0 auto;">
+                <option value=""><?php esc_html_e( 'All Statuses', 'xen-inventory' ); ?></option>
+                <option value="active"><?php esc_html_e( 'Active', 'xen-inventory' ); ?></option>
+                <option value="overdue"><?php esc_html_e( 'Overdue', 'xen-inventory' ); ?></option>
+                <option value="returned"><?php esc_html_e( 'Returned', 'xen-inventory' ); ?></option>
+            </select>
             <span class="xen-borrows-count" id="xen-history-count" style="font-size:.85rem;color:#666;"></span>
         </div>
         <div class="xen-history-table-wrap">

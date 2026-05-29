@@ -590,26 +590,30 @@
     } );
 
     // -----------------------------------------------------------------------
-    // My Borrow History — client-side filter + pagination.
+    // My Borrow History — client-side filter + status filter + pagination.
     // -----------------------------------------------------------------------
 
     ( function () {
-        var PER_PAGE    = 10;
-        var $rows       = $( '.xen-my-history-row' );
+        var PER_PAGE      = 10;
+        var $rows         = $( '.xen-my-history-row' );
         if ( ! $rows.length ) return;
 
-        var $filter     = $( '#xen-history-filter' );
-        var $pagination = $( '#xen-history-pagination' );
-        var $count      = $( '#xen-history-count' );
-        var currentPage = 1;
+        var $filter       = $( '#xen-history-filter' );
+        var $statusFilter = $( '#xen-history-status-filter' );
+        var $pagination   = $( '#xen-history-pagination' );
+        var $count        = $( '#xen-history-count' );
+        var currentPage   = 1;
 
         function getMatching() {
-            var q = $filter.length ? $filter.val().toLowerCase().trim() : '';
+            var q      = $filter.length ? $filter.val().toLowerCase().trim() : '';
+            var status = $statusFilter.length ? $statusFilter.val() : '';
             return $rows.filter( function () {
-                var $r = $( this );
-                return ! q
+                var $r       = $( this );
+                var textOk   = ! q
                     || ( $r.data( 'item-title' ) || '' ).toLowerCase().indexOf( q ) !== -1
                     || ( $r.data( 'borrow-tags' ) || '' ).toLowerCase().indexOf( q ) !== -1;
+                var statusOk = ! status || ( $r.data( 'status' ) || '' ) === status;
+                return textOk && statusOk;
             } );
         }
 
@@ -641,7 +645,8 @@
             }
         }
 
-        if ( $filter.length ) { $filter.on( 'input', function () { currentPage = 1; render(); } ); }
+        if ( $filter.length )       { $filter.on( 'input', function () { currentPage = 1; render(); } ); }
+        if ( $statusFilter.length ) { $statusFilter.on( 'change', function () { currentPage = 1; render(); } ); }
         render();
     } )();
 
