@@ -5,6 +5,48 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.6.0 — 2026-05-29 =
+------------------------------------------------------------------------------
+
+== Added ==
+
+* [Frontend — My Active Borrows] Double-clicking any row now opens a
+  read-only detail modal showing all transaction fields: item title,
+  entity/name, contact, tags, quantity, borrowed date/time, due date/time,
+  and notes. The modal is available to all logged-in users.
+
+* [Frontend — My Active Borrows] Client-side filter bar lets users search
+  active borrows by item name in real time. A live item count updates as
+  the filter changes. Pagination (5 rows per page) with numbered page
+  buttons appears automatically when more than 5 rows are present.
+
+* [Frontend — My Active Borrows] Borrowed and Due date columns now display
+  both date and time using the site's configured date/time format.
+
+* [Frontend — Borrow Record modal] The log-edit modal (My Borrow History
+  dblclick) now displays a read-only detail table at the top of the modal
+  showing all relevant context: item title, entity/name, contact, tags,
+  quantity, and date borrowed. This applies on both the frontend inventory
+  display page and the single-item page.
+
+* [Frontend — Borrow Record modal] Added an "⏱ Now" button beside the
+  "Date & Time Returned" field that stamps the current date/time into the
+  input with a single click.
+
+* [Frontend — My Borrow History] Double-clicking a history row for
+  non-admin users (those without xen_return_items capability) now falls
+  back to the same read-only detail modal instead of silently doing nothing.
+
+== Changed ==
+
+* [Frontend — Borrow Record modal] "Date Returned" input type changed from
+  `date` (date-only) to `datetime-local` so the time of return is also
+  captured and stored. Applies to both inventory-display and page-item views.
+
+* [Frontend — Borrow Record modal] Field label updated from "Date Returned"
+  to "Date & Time Returned" to reflect the datetime-local input.
+
+------------------------------------------------------------------------------
 = 1.5.9 — 2026-05-30 =
 ------------------------------------------------------------------------------
 

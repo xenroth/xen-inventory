@@ -215,7 +215,7 @@ if ( '' !== $view_entity ) {
                         </td>
                         <td class="xen-log-returned-cell">
                             <?php echo $log->date_returned
-                                ? esc_html( wp_date( $date_fmt, strtotime( $log->date_returned ) ) )
+                                ? esc_html( wp_date( $date_fmt . ' ' . get_option( 'time_format' ), strtotime( $log->date_returned ) ) )
                                 : '—'; ?>
                         </td>
                         <td>

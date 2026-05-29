@@ -97,13 +97,13 @@ $action_classes = [
         <table class="wp-list-table widefat fixed striped xen-log-table xen-audit-table">
             <thead>
                 <tr>
-                    <th style="width:16%"><?php esc_html_e( 'Date / Time',   'xen-inventory' ); ?></th>
-                    <th style="width:14%"><?php esc_html_e( 'User',          'xen-inventory' ); ?></th>
-                    <th style="width:10%"><?php esc_html_e( 'Action',        'xen-inventory' ); ?></th>
-                    <th style="width:10%"><?php esc_html_e( 'Object Type',   'xen-inventory' ); ?></th>
-                    <th style="width:25%"><?php esc_html_e( 'Label',         'xen-inventory' ); ?></th>
+                    <th style="width:18%"><?php esc_html_e( 'Date / Time',   'xen-inventory' ); ?></th>
+                    <th style="width:16%"><?php esc_html_e( 'User',          'xen-inventory' ); ?></th>
+                    <th style="width:11%"><?php esc_html_e( 'Action',        'xen-inventory' ); ?></th>
+                    <th class="xen-audit-col--hidden" style="display:none"><?php esc_html_e( 'Object Type',   'xen-inventory' ); ?></th>
+                    <th class="xen-audit-col--hidden" style="display:none"><?php esc_html_e( 'Label',         'xen-inventory' ); ?></th>
                     <th><?php esc_html_e( 'Details',     'xen-inventory' ); ?></th>
-                    <th style="width:12%"><?php esc_html_e( 'IP Address',    'xen-inventory' ); ?></th>
+                    <th style="width:13%"><?php esc_html_e( 'IP Address',    'xen-inventory' ); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -122,7 +122,19 @@ $action_classes = [
                         $details_str = implode( ' · ', $parts );
                     }
                 ?>
-                    <tr>
+                    <tr class="xen-audit-row"
+                        style="cursor:pointer"
+                        title="<?php esc_attr_e( 'Double-click to view details', 'xen-inventory' ); ?>"
+                        data-action="<?php echo esc_attr( $entry->action ); ?>"
+                        data-object-type="<?php echo esc_attr( $entry->object_type ); ?>"
+                        data-object-id="<?php echo (int) $entry->object_id; ?>"
+                        data-label="<?php echo esc_attr( $entry->label ); ?>"
+                        data-details="<?php echo esc_attr( $entry->details ?? '' ); ?>"
+                        data-user-name="<?php echo esc_attr( $entry->user_name ); ?>"
+                        data-user-id="<?php echo (int) $entry->user_id; ?>"
+                        data-ip="<?php echo esc_attr( $entry->ip ); ?>"
+                        data-created-at="<?php echo esc_attr( $entry->created_at ); ?>"
+                    >
                         <td>
                             <span title="<?php echo esc_attr( $entry->created_at ); ?>">
                                 <?php echo esc_html( wp_date( $date_fmt . ' ' . $time_fmt, $created_ts ) ); ?>
@@ -139,8 +151,8 @@ $action_classes = [
                                 <?php echo esc_html( ucfirst( $entry->action ) ); ?>
                             </span>
                         </td>
-                        <td><?php echo esc_html( ucfirst( $entry->object_type ) ); ?></td>
-                        <td><?php echo esc_html( $entry->label ); ?></td>
+                        <td class="xen-audit-col--hidden" style="display:none"><?php echo esc_html( ucfirst( $entry->object_type ) ); ?></td>
+                        <td class="xen-audit-col--hidden" style="display:none"><?php echo esc_html( $entry->label ); ?></td>
                         <td class="xen-audit-details"><?php echo $details_str ? esc_html( $details_str ) : '—'; ?></td>
                         <td><code><?php echo esc_html( $entry->ip ); ?></code></td>
                     </tr>

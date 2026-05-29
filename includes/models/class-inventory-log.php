@@ -408,15 +408,17 @@ class InventoryLog {
                 // No 'end' — events display as single-day markers on the borrow date.
                 'color' => $color,
                 'extendedProps' => [
-                    'log_id'        => (int) $row->id,
-                    'item_id'       => (int) $row->item_id,
-                    'item_title'    => $row->item_title,
-                    'borrower'      => $row->borrower_full_name ?: $row->borrower_name,
-                    'action'        => $row->action,
-                    'quantity'      => (int) $row->quantity,
-                    'notes'         => $row->notes,
-                    'date_due'      => $row->date_due,
-                    'date_returned' => $row->date_returned,
+                    'log_id'           => (int) $row->id,
+                    'item_id'          => (int) $row->item_id,
+                    'item_title'       => $row->item_title,
+                    'borrower'         => $row->borrower_full_name ?: $row->borrower_name,
+                    'borrower_contact' => $row->borrower_contact ?? '',
+                    'borrow_tags'      => $row->borrow_tags ?? '',
+                    'action'           => $row->action,
+                    'quantity'         => (int) $row->quantity,
+                    'notes'            => $row->notes,
+                    'date_due'         => $row->date_due,
+                    'date_returned'    => $row->date_returned,
                 ],
             ];
         }

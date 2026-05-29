@@ -306,6 +306,7 @@ $check_update_url = wp_nonce_url(
                             <td>
                                 <?php if ( $entry->date_returned ) : ?>
                                     <span class="xen-badge xen-badge--returned"><?php esc_html_e( 'Returned', 'xen-inventory' ); ?></span>
+                                    <br><small class="xen-text-muted"><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $entry->date_returned ) ) ); ?></small>
                                 <?php elseif ( $entry->date_due && strtotime( $entry->date_due ) < time() ) : ?>
                                     <span class="xen-badge xen-badge--overdue"><?php esc_html_e( 'Overdue', 'xen-inventory' ); ?></span>
                                 <?php else : ?>

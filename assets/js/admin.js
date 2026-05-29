@@ -5,6 +5,9 @@
  *  - AJAX delete of borrow log rows.
  *  - AJAX return (close) of open borrow log rows.
  *  - Copy-to-clipboard for shortcode reference panel.
+ *  - Inline edit of borrow log entries (edit row / Return Now).
+ *  - Double-click detail modal for borrow history rows.
+ *  - Double-click detail modal for audit log rows.
  *
  * Depends on: jQuery, xenInventoryAdmin (wp_localize_script).
  */
@@ -12,6 +15,24 @@
 /* global xenInventoryAdmin, jQuery */
 ( function ( $ ) {
     'use strict';
+
+    // -----------------------------------------------------------------------
+    // Helper: convert a DB datetime string to datetime-local input value.
+    // "2024-01-15 14:30:00" or "2024-01-15" → "2024-01-15T14:30"
+    // "2024-01-15T14:30"    → "2024-01-15T14:30" (already correct)
+    // -----------------------------------------------------------------------
+    function toDatetimeLocal( str ) {
+        if ( ! str ) return '';
+        return str.replace( ' ', 'T' ).substring( 0, 16 );
+    }
+
+    // -----------------------------------------------------------------------
+    // Helper: format a datetime string for display (replace T with space).
+    // -----------------------------------------------------------------------
+    function formatDisplay( str ) {
+        if ( ! str ) return '—';
+        return str.replace( 'T', ' ' );
+    }
 
     // -----------------------------------------------------------------------
     // Delete a log entry via AJAX.
@@ -173,11 +194,14 @@
                     '<form class="xen-inline-edit-form" style="display:flex;flex-wrap:wrap;gap:.5rem .75rem;align-items:flex-end;">' +
                         '<label style="display:block;font-size:.8125rem;">' +
                             '<span style="font-weight:600;display:block;">Due Date &amp; Time</span>' +
-                            '<input type="datetime-local" name="date_due" value="' + $( '<div>' ).text( dateDue ).html() + '" style="padding:.3rem .5rem;border:1px solid #ccd0d4;border-radius:3px;" />' +
+                            '<input type="datetime-local" name="date_due" value="' + toDatetimeLocal( dateDue ) + '" style="padding:.3rem .5rem;border:1px solid #ccd0d4;border-radius:3px;" />' +
                         '</label>' +
                         '<label style="display:block;font-size:.8125rem;">' +
-                            '<span style="font-weight:600;display:block;">Date Returned <small style="font-weight:400;">(blank = still out)</small></span>' +
-                            '<input type="date" name="date_returned" value="' + $( '<div>' ).text( dateReturned ).html() + '" style="padding:.3rem .5rem;border:1px solid #ccd0d4;border-radius:3px;" />' +
+                            '<span style="font-weight:600;display:block;">Date &amp; Time Returned <small style="font-weight:400;">(blank = still out)</small></span>' +
+                            '<div style="display:flex;gap:.4rem;align-items:center;">' +
+                                '<input type="datetime-local" name="date_returned" value="' + toDatetimeLocal( dateReturned ) + '" style="padding:.3rem .5rem;border:1px solid #ccd0d4;border-radius:3px;" />' +
+                                '<button type="button" class="button button-small xen-return-now-inline" title="Set to current date &amp; time" style="white-space:nowrap;">Now</button>' +
+                            '</div>' +
                         '</label>' +
                         '<label style="display:block;flex:1 1 220px;font-size:.8125rem;">' +
                             '<span style="font-weight:600;display:block;">Notes</span>' +
@@ -230,10 +254,10 @@
                 $editBtn.data( 'date-returned', dateReturned );
                 $editBtn.data( 'notes',         notes );
                 // Update the Due and Returned cells by named class.
-                $dataRow.find( '.xen-log-due-cell' ).text( dateDue      || '—' );
+                $dataRow.find( '.xen-log-due-cell' ).text( dateDue      ? formatDisplay( dateDue )      : '—' );
                 $dataRow.find( '.xen-log-notes-cell' ).text( notes );
                 if ( dateReturned ) {
-                    $dataRow.find( '.xen-log-returned-cell' ).text( dateReturned );
+                    $dataRow.find( '.xen-log-returned-cell' ).text( formatDisplay( dateReturned ) );
                     $dataRow.find( '.xen-return-log' ).remove();
                 } else {
                     $dataRow.find( '.xen-log-returned-cell' ).html( '<span class="xen-badge xen-badge--open">Open</span>' );
@@ -276,5 +300,133 @@
             }
         } );
     } )();
+
+    // -----------------------------------------------------------------------
+    // "Return Now" button inside the inline edit row.
+    // -----------------------------------------------------------------------
+
+    $( document ).on( 'click', '.xen-return-now-inline', function () {
+        var now = new Date();
+        var pad = function ( n ) { return String( n ).padStart( 2, '0' ); };
+        var val = now.getFullYear() + '-' + pad( now.getMonth() + 1 ) + '-' + pad( now.getDate() ) +
+                  'T' + pad( now.getHours() ) + ':' + pad( now.getMinutes() );
+        $( this ).closest( 'label, div' ).find( 'input[name="date_returned"]' ).val( val );
+    } );
+
+    // -----------------------------------------------------------------------
+    // Shared details modal (used by borrow history rows & audit log rows).
+    // -----------------------------------------------------------------------
+
+    function ensureDetailModal() {
+        if ( $( '#xen-detail-modal' ).length ) { return; }
+
+        $( 'body' ).append(
+            '<div id="xen-detail-modal" style="display:none;position:fixed;inset:0;z-index:100060;align-items:center;justify-content:center;">' +
+            '  <div id="xen-detail-modal-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>' +
+            '  <div style="position:relative;background:#fff;border-radius:4px;padding:1.5rem 1.75rem;' +
+            '       width:560px;max-width:95vw;max-height:85vh;overflow-y:auto;' +
+            '       box-shadow:0 8px 32px rgba(0,0,0,.28);">' +
+            '    <div style="display:flex;align-items:center;justify-content:space-between;' +
+            '         margin-bottom:1rem;border-bottom:1px solid #ddd;padding-bottom:.75rem;">' +
+            '      <h3 id="xen-detail-modal-heading" style="margin:0;font-size:1rem;"></h3>' +
+            '      <button type="button" id="xen-detail-modal-close" class="button" ' +
+            '              style="min-width:auto;padding:0 .5rem;font-size:1.1rem;line-height:1.6;"' +
+            '              aria-label="Close">&times;</button>' +
+            '    </div>' +
+            '    <div id="xen-detail-modal-body"></div>' +
+            '  </div>' +
+            '</div>'
+        );
+
+        $( document ).on( 'click', '#xen-detail-modal-close, #xen-detail-modal-backdrop', function () {
+            $( '#xen-detail-modal' ).css( 'display', 'none' );
+        } );
+
+        $( document ).on( 'keydown.xenDetailModal', function ( e ) {
+            if ( 'Escape' === e.key ) { $( '#xen-detail-modal' ).css( 'display', 'none' ); }
+        } );
+    }
+
+    function showDetailModal( heading, rows ) {
+        ensureDetailModal();
+        $( '#xen-detail-modal-heading' ).text( heading );
+        var html = '<table style="width:100%;border-collapse:collapse;font-size:.875rem;">';
+        rows.forEach( function ( row ) {
+            if ( row[1] === '' || row[1] === null || row[1] === undefined ) { return; }
+            html += '<tr style="border-bottom:1px solid #eee;">' +
+                    '<th style="text-align:left;padding:.45rem .5rem .45rem 0;width:38%;font-weight:600;color:#555;vertical-align:top;">' +
+                    escHtmlStr( row[0] ) + '</th>' +
+                    '<td style="padding:.45rem 0;vertical-align:top;">' + escHtmlStr( String( row[1] ) ) + '</td>' +
+                    '</tr>';
+        } );
+        html += '</table>';
+        $( '#xen-detail-modal-body' ).html( html );
+        $( '#xen-detail-modal' ).css( 'display', 'flex' );
+    }
+
+    function escHtmlStr( str ) {
+        return $( '<div>' ).text( str ).html();
+    }
+
+    // -----------------------------------------------------------------------
+    // Double-click on borrow history rows → show read-only detail modal.
+    // -----------------------------------------------------------------------
+
+    $( document ).on( 'dblclick', '.xen-history-row', function () {
+        var d = $( this ).data();
+        showDetailModal( 'Borrow Record Details', [
+            [ 'Item',           d.itemTitle        || '—' ],
+            [ 'Borrower (WP)',  d.borrowerName     || '—' ],
+            [ 'Entity / Name',  d.borrowerFullName || '—' ],
+            [ 'Contact',        d.borrowerContact  || '—' ],
+            [ 'Tags',           d.borrowTags       || '—' ],
+            [ 'Action',         d.action           || '—' ],
+            [ 'Quantity',       d.qty              || '—' ],
+            [ 'Borrowed',       d.dateBorrowed     || '—' ],
+            [ 'Due',            d.dateDue          || '—' ],
+            [ 'Returned',       d.dateReturned     || '—' ],
+            [ 'Notes',          d.notes            || '—' ],
+        ] );
+    } );
+
+    // -----------------------------------------------------------------------
+    // Double-click on audit log rows → show detail modal.
+    // -----------------------------------------------------------------------
+
+    $( document ).on( 'dblclick', '.xen-audit-row', function () {
+        var d           = $( this ).data();
+        var detailsObj  = {};
+        try {
+            if ( typeof d.details === 'object' && d.details !== null ) {
+                detailsObj = d.details;
+            } else if ( d.details ) {
+                detailsObj = JSON.parse( d.details );
+            }
+        } catch ( ex ) {
+            detailsObj = {};
+        }
+
+        var rows = [
+            [ 'Date / Time',  d.createdAt  || '—' ],
+            [ 'User',         d.userName   || '—' ],
+            [ 'User ID',      d.userId     || '—' ],
+            [ 'Action',       d.action     || '—' ],
+            [ 'Object Type',  d.objectType || '—' ],
+            [ 'Label',        d.label      || '—' ],
+            [ 'IP Address',   d.ip         || '—' ],
+        ];
+
+        // Append each detail key/value as its own row.
+        if ( detailsObj && typeof detailsObj === 'object' ) {
+            Object.keys( detailsObj ).forEach( function ( k ) {
+                var v = detailsObj[ k ];
+                if ( v !== null && v !== undefined && v !== '' ) {
+                    rows.push( [ '↳ ' + k, String( v ) ] );
+                }
+            } );
+        }
+
+        showDetailModal( 'Audit Log Details', rows );
+    } );
 
 } )( jQuery );

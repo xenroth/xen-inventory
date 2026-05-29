@@ -33,6 +33,8 @@ if ( ! defined( 'ABSPATH' ) ) {
         <dl class="xen-event-popover__dl">
             <dt><?php esc_html_e( 'Item',     'xen-inventory' ); ?></dt><dd id="xen-pop-item"></dd>
             <dt><?php esc_html_e( 'Borrower', 'xen-inventory' ); ?></dt><dd id="xen-pop-action"></dd>
+            <dt><?php esc_html_e( 'Contact',  'xen-inventory' ); ?></dt><dd id="xen-pop-contact"></dd>
+            <dt><?php esc_html_e( 'Tags',     'xen-inventory' ); ?></dt><dd id="xen-pop-tags"></dd>
             <dt><?php esc_html_e( 'Quantity', 'xen-inventory' ); ?></dt><dd id="xen-pop-qty"></dd>
             <dt><?php esc_html_e( 'Notes',    'xen-inventory' ); ?></dt><dd id="xen-pop-notes"></dd>
         </dl>
@@ -72,8 +74,18 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </div>
 
                     <div class="xen-edit-modal__field">
-                        <label class="xen-edit-modal__label"><?php esc_html_e( 'Borrower', 'xen-inventory' ); ?></label>
+                        <label class="xen-edit-modal__label"><?php esc_html_e( 'Borrower / Entity', 'xen-inventory' ); ?></label>
                         <p id="xen-edit-borrower" class="xen-edit-modal__static"></p>
+                    </div>
+
+                    <div class="xen-edit-modal__field">
+                        <label class="xen-edit-modal__label"><?php esc_html_e( 'Contact', 'xen-inventory' ); ?></label>
+                        <p id="xen-edit-contact" class="xen-edit-modal__static" style="color:#666;font-size:.875rem;"></p>
+                    </div>
+
+                    <div class="xen-edit-modal__field">
+                        <label class="xen-edit-modal__label"><?php esc_html_e( 'Tags', 'xen-inventory' ); ?></label>
+                        <p id="xen-edit-tags" class="xen-edit-modal__static" style="color:#666;font-size:.875rem;"></p>
                     </div>
 
                     <div class="xen-edit-modal__row">
@@ -86,10 +98,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 
                         <div class="xen-edit-modal__field">
                             <label class="xen-edit-modal__label" for="xen-edit-date-returned">
-                                <?php esc_html_e( 'Date Returned', 'xen-inventory' ); ?>
+                                <?php esc_html_e( 'Date &amp; Time Returned', 'xen-inventory' ); ?>
                                 <span class="xen-edit-modal__hint"><?php esc_html_e( '(leave blank if still out)', 'xen-inventory' ); ?></span>
                             </label>
-                            <input type="date" id="xen-edit-date-returned" name="date_returned" class="xen-edit-modal__input" />
+                            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+                                <input type="datetime-local" id="xen-edit-date-returned" name="date_returned" class="xen-edit-modal__input" style="flex:1;min-width:0;" />
+                                <button type="button" class="xen-btn xen-btn--ghost" id="xen-return-now-btn" style="white-space:nowrap;flex-shrink:0;font-size:.8125rem;">
+                                    <?php esc_html_e( '&#x23F1; Now', 'xen-inventory' ); ?>
+                                </button>
+                            </div>
                         </div>
                     </div>
 

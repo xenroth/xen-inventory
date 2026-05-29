@@ -204,7 +204,7 @@ $pages = (int) ceil( $total / $per_page );
                         </td>
                         <td class="xen-log-returned-cell">
                             <?php if ( $log->date_returned ) : ?>
-                                <?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $log->date_returned ) ) ); ?>
+                                <?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $log->date_returned ) ) ); ?>
                             <?php else : ?>
                                 <span class="xen-badge xen-badge--open"><?php esc_html_e( 'Open', 'xen-inventory' ); ?></span>
                             <?php endif; ?>

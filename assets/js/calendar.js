@@ -22,6 +22,8 @@
         const popClose     = document.getElementById( 'xen-popover-close' );
         const popItem      = document.getElementById( 'xen-pop-item' );
         const popAction    = document.getElementById( 'xen-pop-action' );
+        const popContact   = document.getElementById( 'xen-pop-contact' );
+        const popTags      = document.getElementById( 'xen-pop-tags' );
         const popQty       = document.getElementById( 'xen-pop-qty' );
         const popNotes     = document.getElementById( 'xen-pop-notes' );
 
@@ -47,13 +49,15 @@
 
         /**
          * Populate the popover with event data.
-         * @param {object} props  - { item_title, borrower, action, quantity, notes }
+         * @param {object} props  - { item_title, borrower, borrower_contact, borrow_tags, action, quantity, notes }
          */
         function fillPopover( props ) {
             popItem.textContent   = props.item_title || '';
             popAction.textContent = props.borrower
                 ? props.borrower + ( props.action ? ' — ' + props.action : '' )
                 : ( props.action || '' );
+            if ( popContact ) popContact.textContent = props.borrower_contact || '—';
+            if ( popTags )    popTags.textContent    = props.borrow_tags      || '—';
             popQty.textContent    = props.quantity || '';
             popNotes.textContent  = props.notes    || '—';
         }
@@ -144,6 +148,8 @@
                     + ' data-log-id="'      + escHtml( logId ) + '"'
                     + ' data-item-title="'  + escHtml( props.item_title || ev.title ) + '"'
                     + ' data-borrower="'    + escHtml( props.borrower || '' ) + '"'
+                    + ' data-contact="'     + escHtml( props.borrower_contact || '' ) + '"'
+                    + ' data-tags="'        + escHtml( props.borrow_tags || '' ) + '"'
                     + ' data-action="'      + escHtml( props.action || '' ) + '"'
                     + ' data-qty="'         + escHtml( props.quantity || 1 ) + '"'
                     + ' data-notes="'       + escHtml( props.notes || '' ) + '"'
@@ -208,11 +214,13 @@
                 if ( ! item ) return;
 
                 var props = {
-                    item_title: item.dataset.itemTitle || '',
-                    borrower:   item.dataset.borrower  || '',
-                    action:     item.dataset.action    || '',
-                    quantity:   item.dataset.qty       || '',
-                    notes:      item.dataset.notes     || '',
+                    item_title:       item.dataset.itemTitle || '',
+                    borrower:         item.dataset.borrower  || '',
+                    borrower_contact: item.dataset.contact   || '',
+                    borrow_tags:      item.dataset.tags      || '',
+                    action:           item.dataset.action    || '',
+                    quantity:         item.dataset.qty       || '',
+                    notes:            item.dataset.notes     || '',
                 };
                 fillPopover( props );
                 positionPopover( e.clientX, e.clientY );
@@ -299,6 +307,8 @@
         var editLogId        = document.getElementById( 'xen-edit-log-id' );
         var editItemName     = document.getElementById( 'xen-edit-item-name' );
         var editBorrower     = document.getElementById( 'xen-edit-borrower' );
+        var editContact      = document.getElementById( 'xen-edit-contact' );
+        var editTags         = document.getElementById( 'xen-edit-tags' );
         var editDateDue      = document.getElementById( 'xen-edit-date-due' );
         var editDateReturned = document.getElementById( 'xen-edit-date-returned' );
         var editNotes        = document.getElementById( 'xen-edit-notes' );
@@ -306,18 +316,29 @@
         var editForm         = document.getElementById( 'xen-edit-borrow-form' );
         var editModalClose   = document.getElementById( 'xen-edit-modal-close' );
         var editCancelBtn    = document.getElementById( 'xen-edit-cancel-btn' );
+        var returnNowBtn     = document.getElementById( 'xen-return-now-btn' );
         var editModalBackdrop = editModal ? editModal.querySelector( '.xen-edit-modal__backdrop' ) : null;
+
+        /**
+         * Convert a DB/AJAX datetime string (e.g. "2024-01-15 14:30:00" or "2024-01-15")
+         * to the YYYY-MM-DDTHH:MM format required by datetime-local inputs.
+         */
+        function toDatetimeLocalVal( str ) {
+            if ( ! str ) return '';
+            return str.replace( ' ', 'T' ).substring( 0, 16 );
+        }
 
         function openEditModal( event ) {
             if ( ! editModal ) return;
             var props = event.extendedProps || {};
 
-            editLogId.value        = event.id || props.log_id || '';
+            editLogId.value          = event.id || props.log_id || '';
             editItemName.textContent = props.item_title || event.title || '';
             editBorrower.textContent = props.borrower   || '';
-            // Preserve time if present; datetime-local input expects "YYYY-MM-DDTHH:MM".
-            editDateDue.value        = props.date_due      ? props.date_due.replace( ' ', 'T' ).substring( 0, 16 )      : '';
-            editDateReturned.value   = props.date_returned ? props.date_returned.replace( ' ', 'T' ).substring( 0, 16 ) : '';
+            if ( editContact ) editContact.textContent = props.borrower_contact || '—';
+            if ( editTags )    editTags.textContent    = props.borrow_tags      || '—';
+            editDateDue.value        = toDatetimeLocalVal( props.date_due      || '' );
+            editDateReturned.value   = toDatetimeLocalVal( props.date_returned || '' );
             editNotes.value          = props.notes || '';
             editStatus.textContent   = '';
             editStatus.className     = 'xen-edit-modal__status';
@@ -335,6 +356,17 @@
         if ( editModalClose ) editModalClose.addEventListener( 'click', closeEditModal );
         if ( editCancelBtn )  editCancelBtn.addEventListener(  'click', closeEditModal );
         if ( editModalBackdrop ) editModalBackdrop.addEventListener( 'click', closeEditModal );
+
+        // "Return Now" — stamps the current local datetime into the returned field.
+        if ( returnNowBtn ) {
+            returnNowBtn.addEventListener( 'click', function () {
+                var now  = new Date();
+                var pad  = function ( n ) { return String( n ).padStart( 2, '0' ); };
+                editDateReturned.value =
+                    now.getFullYear() + '-' + pad( now.getMonth() + 1 ) + '-' + pad( now.getDate() ) +
+                    'T' + pad( now.getHours() ) + ':' + pad( now.getMinutes() );
+            } );
+        }
 
         document.addEventListener( 'keydown', function ( e ) {
             if ( 'Escape' === e.key ) closeEditModal();

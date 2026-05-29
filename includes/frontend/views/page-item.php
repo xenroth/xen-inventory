@@ -254,9 +254,19 @@ get_header();
     <div class="xen-log-edit-modal__panel">
         <button class="xen-log-edit-modal__close" id="xen-log-edit-close" type="button" aria-label="<?php esc_attr_e( 'Close', 'xen-inventory' ); ?>">&#x2715;</button>
         <h2 class="xen-log-edit-modal__title" id="xen-log-edit-title"><?php esc_html_e( 'Edit Borrow Record', 'xen-inventory' ); ?></h2>
-        <div class="xen-log-edit-modal__meta">
-            <span class="xen-log-edit-modal__borrower" id="xen-log-edit-borrower"></span>
+
+        <!-- Read-only transaction details -->
+        <div class="xen-log-edit-modal__info" style="margin-bottom:1rem;">
+            <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
+                <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;width:38%;font-weight:600;color:#555;"><?php esc_html_e( 'Item',          'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-item-title">—</td></tr>
+                <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Entity / Name', 'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-entity">—</td></tr>
+                <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Contact',       'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-contact">—</td></tr>
+                <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Tags',          'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-tags">—</td></tr>
+                <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Quantity',      'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-qty">—</td></tr>
+                <tr><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Borrowed',      'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-borrowed">—</td></tr>
+            </table>
         </div>
+
         <form id="xen-log-edit-form" class="xen-form xen-log-edit-form">
             <input type="hidden" id="xen-log-edit-id" name="log_id" />
             <div class="xen-form__group">
@@ -264,8 +274,11 @@ get_header();
                 <input type="datetime-local" id="xen-log-edit-due" name="date_due" />
             </div>
             <div class="xen-form__group">
-                <label for="xen-log-edit-returned"><?php esc_html_e( 'Date Returned', 'xen-inventory' ); ?></label>
-                <input type="date" id="xen-log-edit-returned" name="date_returned" />
+                <label for="xen-log-edit-returned"><?php esc_html_e( 'Date &amp; Time Returned', 'xen-inventory' ); ?></label>
+                <div style="display:flex;gap:.5rem;align-items:center;">
+                    <input type="datetime-local" id="xen-log-edit-returned" name="date_returned" />
+                    <button type="button" class="xen-btn xen-btn--ghost xen-log-edit-return-now" title="<?php esc_attr_e( 'Set to current date and time', 'xen-inventory' ); ?>">&#x23F1; Now</button>
+                </div>
             </div>
             <div class="xen-form__group">
                 <label for="xen-log-edit-notes"><?php esc_html_e( 'Notes', 'xen-inventory' ); ?></label>

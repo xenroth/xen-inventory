@@ -36,6 +36,8 @@ class Assets {
         $xen_pages = [
             'toplevel_page_xen-inventory',
             'xen-inventory_page_xen-borrow-log',
+            'xen-inventory_page_xen-borrowers',
+            'xen-inventory_page_xen-audit-log',
             'xen-inventory_page_xen-inventory-settings',
         ];
 

@@ -292,12 +292,41 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
     ?>
     <div class="xen-my-borrows">
         <h3 class="xen-my-borrows__title"><?php esc_html_e( 'My Active Borrows', 'xen-inventory' ); ?></h3>
+
+        <!-- Filter toolbar -->
+        <div class="xen-borrows-toolbar" style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap;">
+            <input
+                type="search"
+                id="xen-borrows-filter"
+                class="xen-input"
+                placeholder="<?php esc_attr_e( 'Filter by item name…', 'xen-inventory' ); ?>"
+                aria-label="<?php esc_attr_e( 'Filter active borrows by item name', 'xen-inventory' ); ?>"
+                autocomplete="off"
+                style="flex:1 1 200px;max-width:280px;"
+            />
+            <span class="xen-borrows-count" id="xen-borrows-count" style="font-size:.85rem;color:#666;"></span>
+        </div>
+
         <div class="xen-borrows-list">
             <?php foreach ( $my_borrows as $borrow ) :
                 $due_time   = $borrow->date_due ? strtotime( $borrow->date_due ) : null;
                 $is_overdue = $due_time && $due_time < time();
+                $bdf        = get_option( 'date_format' );
+                $btf        = get_option( 'time_format' );
             ?>
-            <div class="xen-return-row<?php echo $is_overdue ? ' xen-return-row--overdue' : ''; ?>">
+            <div class="xen-return-row<?php echo $is_overdue ? ' xen-return-row--overdue' : ''; ?>"
+                data-log-id="<?php echo (int) $borrow->id; ?>"
+                data-item-title="<?php echo esc_attr( $borrow->item_title ); ?>"
+                data-borrower-name="<?php echo esc_attr( $borrow->borrower_name ?? '' ); ?>"
+                data-borrower-full-name="<?php echo esc_attr( $borrow->borrower_full_name ?? '' ); ?>"
+                data-borrower-contact="<?php echo esc_attr( $borrow->borrower_contact ?? '' ); ?>"
+                data-borrow-tags="<?php echo esc_attr( $borrow->borrow_tags ?? '' ); ?>"
+                data-qty="<?php echo (int) $borrow->quantity; ?>"
+                data-date-borrowed="<?php echo esc_attr( $borrow->date_borrowed ?? '' ); ?>"
+                data-date-due="<?php echo esc_attr( $borrow->date_due ?? '' ); ?>"
+                data-notes="<?php echo esc_attr( $borrow->notes ?? '' ); ?>"
+                title="<?php esc_attr_e( 'Double-click to view full details', 'xen-inventory' ); ?>"
+            >
                 <div class="xen-return-row__item">
                     <strong><?php echo esc_html( $borrow->item_title ); ?></strong>
                     <span class="xen-return-row__qty">
@@ -311,14 +340,14 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                     <span>
                         <?php
                         /* translators: %s: date */
-                        printf( esc_html__( 'Borrowed: %s', 'xen-inventory' ), esc_html( wp_date( get_option( 'date_format' ), strtotime( $borrow->date_borrowed ) ) ) );
+                        printf( esc_html__( 'Borrowed: %s', 'xen-inventory' ), esc_html( wp_date( $bdf . ' ' . $btf, strtotime( $borrow->date_borrowed ) ) ) );
                         ?>
                     </span>
                     <?php if ( $due_time ) : ?>
                         <span class="<?php echo $is_overdue ? 'xen-overdue-text' : ''; ?>">
                             <?php
                             /* translators: %s: due date */
-                            printf( esc_html__( 'Due: %s', 'xen-inventory' ), esc_html( wp_date( get_option( 'date_format' ), $due_time ) ) );
+                            printf( esc_html__( 'Due: %s', 'xen-inventory' ), esc_html( wp_date( $bdf . ' ' . $btf, $due_time ) ) );
                             ?>
                         </span>
                     <?php endif; ?>
@@ -352,8 +381,11 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                 </div>
             </div>
             <?php endforeach; ?>
-        </div>
-    </div>
+        </div><!-- .xen-borrows-list -->
+
+        <!-- Pagination (populated by JS) -->
+        <div class="xen-borrows-pagination" id="xen-borrows-pagination" aria-label="<?php esc_attr_e( 'Active borrows pages', 'xen-inventory' ); ?>" style="margin-top:.6rem;display:flex;gap:.3rem;flex-wrap:wrap;"></div>
+    </div><!-- .xen-my-borrows -->
     <?php endif; ?>
 
     <!-- My Borrow History (current user only) -->
@@ -398,6 +430,10 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                         title="<?php esc_attr_e( 'Double-click to view or edit this record', 'xen-inventory' ); ?>"
                         data-log-id="<?php echo (int) $row->id; ?>"
                         data-item-title="<?php echo esc_attr( $row->item_title ); ?>"
+                        data-borrower-name="<?php echo esc_attr( $row->borrower_name ?? '' ); ?>"
+                        data-borrower-full-name="<?php echo esc_attr( $row->borrower_full_name ?? '' ); ?>"
+                        data-borrower-contact="<?php echo esc_attr( $row->borrower_contact ?? '' ); ?>"
+                        data-borrow-tags="<?php echo esc_attr( $row->borrow_tags ?? '' ); ?>"
                         data-qty="<?php echo (int) $row->quantity; ?>"
                         data-date-borrowed="<?php echo esc_attr( $row->date_borrowed ?? '' ); ?>"
                         data-date-due="<?php echo esc_attr( $row->date_due ?? '' ); ?>"
@@ -445,9 +481,19 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
         <div class="xen-log-edit-modal__panel">
             <button class="xen-log-edit-modal__close" id="xen-log-edit-close" type="button" aria-label="<?php esc_attr_e( 'Close', 'xen-inventory' ); ?>">&#x2715;</button>
             <h2 class="xen-log-edit-modal__title" id="xen-log-edit-title"><?php esc_html_e( 'Borrow Record', 'xen-inventory' ); ?></h2>
-            <div class="xen-log-edit-modal__meta">
-                <span class="xen-log-edit-modal__borrower" id="xen-log-edit-borrower"></span>
+
+            <!-- Read-only transaction details -->
+            <div class="xen-log-edit-modal__info" style="margin-bottom:1rem;">
+                <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
+                    <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;width:38%;font-weight:600;color:#555;"><?php esc_html_e( 'Item',          'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-item-title">—</td></tr>
+                    <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Entity / Name', 'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-entity">—</td></tr>
+                    <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Contact',       'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-contact">—</td></tr>
+                    <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Tags',          'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-tags">—</td></tr>
+                    <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Quantity',      'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-qty">—</td></tr>
+                    <tr><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Borrowed',      'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-borrowed">—</td></tr>
+                </table>
             </div>
+
             <form id="xen-log-edit-form" class="xen-form xen-log-edit-form">
                 <input type="hidden" id="xen-log-edit-id" name="log_id" />
                 <div class="xen-form__group">
@@ -455,8 +501,11 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                     <input type="datetime-local" id="xen-log-edit-due" name="date_due" />
                 </div>
                 <div class="xen-form__group">
-                    <label for="xen-log-edit-returned"><?php esc_html_e( 'Date Returned', 'xen-inventory' ); ?></label>
-                    <input type="date" id="xen-log-edit-returned" name="date_returned" />
+                    <label for="xen-log-edit-returned"><?php esc_html_e( 'Date &amp; Time Returned', 'xen-inventory' ); ?></label>
+                    <div style="display:flex;gap:.5rem;align-items:center;">
+                        <input type="datetime-local" id="xen-log-edit-returned" name="date_returned" />
+                        <button type="button" class="xen-btn xen-btn--ghost xen-log-edit-return-now" title="<?php esc_attr_e( 'Set to current date and time', 'xen-inventory' ); ?>">&#x23F1; Now</button>
+                    </div>
                 </div>
                 <div class="xen-form__group">
                     <label for="xen-log-edit-notes"><?php esc_html_e( 'Notes', 'xen-inventory' ); ?></label>
@@ -472,6 +521,20 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
     </div>
     <?php endif; ?>
 
+    <?php endif; ?>
+
+    <!-- Read-only borrow detail modal — available to all logged-in users (active borrows dblclick + non-admin history dblclick) -->
+    <?php if ( is_user_logged_in() ) : ?>
+    <div id="xen-active-detail-modal" style="display:none;position:fixed;inset:0;z-index:100060;align-items:center;justify-content:center;" role="dialog" aria-modal="true" aria-labelledby="xen-active-detail-title">
+        <div id="xen-active-detail-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+        <div style="position:relative;background:#fff;border-radius:6px;padding:1.5rem 1.75rem;width:520px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;border-bottom:2px solid #f0f0f0;padding-bottom:.75rem;">
+                <h3 id="xen-active-detail-title" style="margin:0;font-size:1rem;font-weight:700;"></h3>
+                <button type="button" id="xen-active-detail-close" class="xen-btn xen-btn--ghost" style="padding:.2rem .65rem;font-size:1.15rem;line-height:1.3;" aria-label="<?php esc_attr_e( 'Close', 'xen-inventory' ); ?>">&times;</button>
+            </div>
+            <div id="xen-active-detail-body"></div>
+        </div>
+    </div>
     <?php endif; ?>
 
 </div><!-- .xen-inventory-wrap -->

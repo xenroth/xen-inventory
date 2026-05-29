@@ -236,8 +236,13 @@ class AjaxHandlers {
 
         if ( ! empty( $_POST['date_returned'] ) ) {
             $date_returned = sanitize_text_field( wp_unslash( $_POST['date_returned'] ) );
-            if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_returned ) ) {
-                $data['date_returned'] = $date_returned;
+            // Accept both Y-m-d (date only) and Y-m-dTHH:MM (datetime-local) formats.
+            if ( preg_match( '/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/', $date_returned ) ) {
+                $datetime_val = str_replace( 'T', ' ', $date_returned );
+                if ( strpos( $date_returned, 'T' ) !== false ) {
+                    $datetime_val .= ':00'; // append seconds
+                }
+                $data['date_returned'] = $datetime_val;
                 $data['action']        = 'returned';
             }
         } elseif ( isset( $_POST['date_returned'] ) && '' === $_POST['date_returned'] ) {

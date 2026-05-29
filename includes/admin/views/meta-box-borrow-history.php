@@ -33,7 +33,22 @@ if ( ! defined( 'ABSPATH' ) ) {
         </thead>
         <tbody>
             <?php foreach ( $logs as $log ) : ?>
-                <tr>
+                <tr class="xen-history-row"
+                    style="cursor:pointer"
+                    title="<?php esc_attr_e( 'Double-click to view full details', 'xen-inventory' ); ?>"
+                    data-log-id="<?php echo (int) $log->id; ?>"
+                    data-item-title="<?php echo esc_attr( $post->post_title ?? '' ); ?>"
+                    data-borrower-name="<?php echo esc_attr( $log->borrower_name ?? '' ); ?>"
+                    data-borrower-full-name="<?php echo esc_attr( $log->borrower_full_name ?? '' ); ?>"
+                    data-borrower-contact="<?php echo esc_attr( $log->borrower_contact ?? '' ); ?>"
+                    data-borrow-tags="<?php echo esc_attr( $log->borrow_tags ?? '' ); ?>"
+                    data-action="<?php echo esc_attr( $log->action ?? '' ); ?>"
+                    data-qty="<?php echo (int) $log->quantity; ?>"
+                    data-date-borrowed="<?php echo esc_attr( $log->date_borrowed ?? '' ); ?>"
+                    data-date-due="<?php echo esc_attr( $log->date_due ?? '' ); ?>"
+                    data-date-returned="<?php echo esc_attr( $log->date_returned ?? '' ); ?>"
+                    data-notes="<?php echo esc_attr( $log->notes ?? '' ); ?>"
+                >
                     <td><?php echo (int) $log->id; ?></td>
                     <td>
                         <?php echo esc_html( $log->borrower_name ); ?>
@@ -54,7 +69,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <td class="xen-log-due-cell"><?php echo $log->date_due ? esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $log->date_due ) ) ) : '—'; ?></td>
                     <td class="xen-log-returned-cell">
                         <?php if ( $log->date_returned ) : ?>
-                            <?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $log->date_returned ) ) ); ?>
+                            <?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $log->date_returned ) ) ); ?>
                         <?php else : ?>
                             <span class="xen-badge xen-badge--open"><?php esc_html_e( 'Open', 'xen-inventory' ); ?></span>
                         <?php endif; ?>

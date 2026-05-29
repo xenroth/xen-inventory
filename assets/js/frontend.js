@@ -224,16 +224,31 @@
 
     function openLogEditModal( data ) {
         if ( ! $logEditModal || ! $logEditModal.length ) {
-            if ( ! initLogEditModal() ) return;
+            if ( ! initLogEditModal() ) { return false; }
         }
         $logEditId.val( data.logId || '' );
-        $logEditDue.val( data.dateDue    ? data.dateDue.replace( ' ', 'T' ).substring( 0, 16 ) : '' );
-        $logEditRet.val( data.dateRet    ? data.dateRet.substring( 0, 10 )                      : '' );
+        $logEditDue.val( data.dateDue ? data.dateDue.replace( ' ', 'T' ).substring( 0, 16 ) : '' );
+        $logEditRet.val( data.dateRet ? data.dateRet.replace( ' ', 'T' ).substring( 0, 16 ) : '' );
         $logEditNotes.val( data.notes || '' );
-        $logEditBorr.text( data.borrower || data.itemTitle || '' );
+
+        // Read-only info fields (new in updated modal markup).
+        var $item     = $( '#xen-log-edit-item-title' );
+        var $entity   = $( '#xen-log-edit-entity' );
+        var $contact  = $( '#xen-log-edit-contact' );
+        var $tags     = $( '#xen-log-edit-tags' );
+        var $qty      = $( '#xen-log-edit-qty' );
+        var $borrowed = $( '#xen-log-edit-borrowed' );
+        if ( $item.length )     $item.text( data.itemTitle                    || '—' );
+        if ( $entity.length )   $entity.text( data.borrowerFullName || data.borrower || '—' );
+        if ( $contact.length )  $contact.text( data.borrowerContact           || '—' );
+        if ( $tags.length )     $tags.text( data.borrowTags                   || '—' );
+        if ( $qty.length )      $qty.text( data.qty ? String( data.qty )      : '—' );
+        if ( $borrowed.length ) $borrowed.text( data.dateBorrowed              || '—' );
+
         $logEditStatus.text( '' ).removeClass( 'xen-log-edit-modal__status--ok xen-log-edit-modal__status--error' );
         $logEditModal.removeAttr( 'hidden' );
         $logEditDue.trigger( 'focus' );
+        return true;
     }
 
     function closeLogEditModal() {
@@ -296,18 +311,37 @@
     } );
 
     // Double-click on My Borrow History row → open detail/edit modal.
-    var _dblClickTimer = null;
     $( document ).on( 'dblclick', '.xen-my-history-row', function ( e ) {
         e.preventDefault();
         var $row = $( this );
-        openLogEditModal( {
-            logId:     $row.data( 'log-id' ),
-            dateDue:   $row.data( 'date-due' ),
-            dateRet:   $row.data( 'date-returned' ),
-            notes:     $row.data( 'notes' ),
-            borrower:  '',
-            itemTitle: $row.data( 'item-title' ),
+        var d    = $row.data();
+        var opened = openLogEditModal( {
+            logId:            d.logId,
+            dateDue:          d.dateDue,
+            dateRet:          d.dateReturned,
+            notes:            d.notes,
+            borrower:         d.borrowerName,
+            borrowerFullName: d.borrowerFullName,
+            borrowerContact:  d.borrowerContact,
+            borrowTags:       d.borrowTags,
+            qty:              d.qty,
+            dateBorrowed:     d.dateBorrowed,
+            itemTitle:        d.itemTitle,
         } );
+        // Non-admin users: edit modal doesn't render — fall back to read-only detail modal.
+        if ( ! opened ) {
+            showBorrowDetail( {
+                itemTitle:        d.itemTitle,
+                borrowerFullName: d.borrowerFullName,
+                borrowerContact:  d.borrowerContact,
+                borrowTags:       d.borrowTags,
+                qty:              d.qty,
+                dateBorrowed:     d.dateBorrowed,
+                dateDue:          d.dateDue,
+                dateReturned:     d.dateReturned,
+                notes:            d.notes,
+            } );
+        }
     } );
 
     // Save handler for the log edit form.
@@ -345,5 +379,145 @@
             $saveBtn.prop( 'disabled', false );
         } );
     } );
+
+    // -----------------------------------------------------------------------
+    // "Return Now" button inside the log edit modal.
+    // -----------------------------------------------------------------------
+
+    $( document ).on( 'click', '.xen-log-edit-return-now', function () {
+        var now = new Date();
+        var pad = function ( n ) { return String( n ).padStart( 2, '0' ); };
+        var val = now.getFullYear() + '-' + pad( now.getMonth() + 1 ) + '-' + pad( now.getDate() )
+                + 'T' + pad( now.getHours() ) + ':' + pad( now.getMinutes() );
+        $( '#xen-log-edit-returned' ).val( val );
+    } );
+
+    // -----------------------------------------------------------------------
+    // Read-only borrow detail modal (for active borrows dblclick + non-admin
+    // borrow history dblclick).
+    // -----------------------------------------------------------------------
+
+    function xenFrontEsc( str ) {
+        return $( '<div>' ).text( String( str ) ).html();
+    }
+
+    function showBorrowDetail( d ) {
+        var $modal = $( '#xen-active-detail-modal' );
+        if ( ! $modal.length ) return;
+
+        $( '#xen-active-detail-title' ).text( d.itemTitle || 'Borrow Details' );
+
+        var fields = [
+            [ 'Item',          d.itemTitle        ],
+            [ 'Entity / Name', d.borrowerFullName ],
+            [ 'Contact',       d.borrowerContact  ],
+            [ 'Tags',          d.borrowTags       ],
+            [ 'Quantity',      d.qty              ],
+            [ 'Borrowed',      d.dateBorrowed     ],
+            [ 'Due',           d.dateDue          ],
+            [ 'Returned',      d.dateReturned     ],
+            [ 'Notes',         d.notes            ],
+        ];
+
+        var html = '<table style="width:100%;border-collapse:collapse;font-size:.9rem;">';
+        fields.forEach( function ( f ) {
+            if ( ! f[1] ) return;
+            html += '<tr style="border-bottom:1px solid #f0f0f0;">'
+                  + '<th style="text-align:left;padding:.4rem .5rem .4rem 0;width:36%;font-weight:600;color:#555;vertical-align:top;">' + xenFrontEsc( f[0] ) + '</th>'
+                  + '<td style="padding:.4rem 0;vertical-align:top;">' + xenFrontEsc( String( f[1] ) ) + '</td>'
+                  + '</tr>';
+        } );
+        html += '</table>';
+
+        $( '#xen-active-detail-body' ).html( html );
+        $modal.css( 'display', 'flex' );
+    }
+
+    $( document ).on( 'click', '#xen-active-detail-close, #xen-active-detail-backdrop', function () {
+        $( '#xen-active-detail-modal' ).css( 'display', 'none' );
+    } );
+
+    $( document ).on( 'keydown.xenActiveDetail', function ( e ) {
+        if ( 'Escape' === e.key ) {
+            $( '#xen-active-detail-modal' ).css( 'display', 'none' );
+        }
+    } );
+
+    // -----------------------------------------------------------------------
+    // My Active Borrows — double-click row for full details.
+    // -----------------------------------------------------------------------
+
+    $( document ).on( 'dblclick', '.xen-return-row', function ( e ) {
+        // Ignore if the click landed on an interactive control inside the row.
+        if ( $( e.target ).closest( 'button, input, label' ).length ) return;
+
+        var d = $( this ).data();
+        showBorrowDetail( {
+            itemTitle:        d.itemTitle        || '',
+            borrowerFullName: d.borrowerFullName || '',
+            borrowerContact:  d.borrowerContact  || '',
+            borrowTags:       d.borrowTags       || '',
+            qty:              d.qty              || '',
+            dateBorrowed:     d.dateBorrowed     || '',
+            dateDue:          d.dateDue          || '',
+            dateReturned:     '',
+            notes:            d.notes            || '',
+        } );
+    } );
+
+    // -----------------------------------------------------------------------
+    // My Active Borrows — client-side filter + pagination.
+    // -----------------------------------------------------------------------
+
+    ( function () {
+        var PER_PAGE     = 5;
+        var $list        = $( '.xen-borrows-list' );
+        if ( ! $list.length ) return;
+
+        var $filter      = $( '#xen-borrows-filter' );
+        var $pagination  = $( '#xen-borrows-pagination' );
+        var $count       = $( '#xen-borrows-count' );
+        var currentPage  = 1;
+
+        function getMatching() {
+            var q = $filter.val().toLowerCase().trim();
+            return $list.find( '.xen-return-row' ).filter( function () {
+                return ! q || ( $( this ).data( 'item-title' ) || '' ).toLowerCase().indexOf( q ) !== -1;
+            } );
+        }
+
+        function render() {
+            var $all  = $list.find( '.xen-return-row' );
+            var $rows = getMatching();
+            var total = $rows.length;
+
+            $all.hide();
+            $rows.slice( ( currentPage - 1 ) * PER_PAGE, currentPage * PER_PAGE ).show();
+
+            if ( $count.length ) {
+                $count.text( total ? ( total + ' item' + ( total !== 1 ? 's' : '' ) ) : 'No items found' );
+            }
+
+            if ( $pagination.length ) {
+                $pagination.empty();
+                var pages = Math.ceil( total / PER_PAGE );
+                if ( pages > 1 ) {
+                    for ( var i = 1; i <= pages; i++ ) {
+                        ( function ( page ) {
+                            $( '<button type="button" class="xen-btn xen-btn--ghost xen-borrows-page-btn">' )
+                                .text( page )
+                                .css( 'font-weight', page === currentPage ? '700' : '' )
+                                .toggleClass( 'xen-btn--active', page === currentPage )
+                                .on( 'click', function () { currentPage = page; render(); } )
+                                .appendTo( $pagination );
+                        } )( i );
+                    }
+                }
+            }
+        }
+
+        $filter.on( 'input', function () { currentPage = 1; render(); } );
+        render();
+    } )();
 
 } )( jQuery );
