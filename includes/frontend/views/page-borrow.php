@@ -34,6 +34,7 @@ if ( ! $item || 'xen_item' !== $item->post_type || 'publish' !== $item->post_sta
 
 $item_status   = get_post_meta( $item_id, '_xen_item_status',   true ) ?: 'available';
 $total_qty     = (int) get_post_meta( $item_id, '_xen_total_quantity', true );
+$available_qty = \XenInventory\Models\InventoryLog::get_available_quantity( $item_id );
 $item_depts    = get_the_terms( $item_id, 'xen_department' );
 $dept_names    = ( $item_depts && ! is_wp_error( $item_depts ) )
     ? implode( ', ', wp_list_pluck( $item_depts, 'name' ) )
@@ -73,6 +74,11 @@ get_header();
                     <?php
                     /* translators: %d: total quantity in stock */
                     printf( esc_html__( 'Total stock: %d', 'xen-inventory' ), $total_qty );
+                    ?>
+                    &nbsp;|&nbsp;
+                    <?php
+                    /* translators: %d: available (not currently borrowed) quantity */
+                    printf( esc_html__( 'Available: %d', 'xen-inventory' ), $available_qty );
                     ?>
                 </p>
 
@@ -144,9 +150,19 @@ get_header();
                             name="quantity"
                             value="1"
                             min="1"
-                            max="<?php echo (int) $total_qty; ?>"
+                            max="<?php echo (int) $available_qty; ?>"
                             required
                         />
+                        <p class="xen-form__hint xen-qty-available-hint">
+                            <?php
+                            printf(
+                                /* translators: 1: available qty, 2: total qty */
+                                esc_html__( '%1$d of %2$d available', 'xen-inventory' ),
+                                $available_qty,
+                                $total_qty
+                            );
+                            ?>
+                        </p>
                     </div>
 
                     <div class="xen-form__group">
@@ -197,6 +213,13 @@ get_header();
                                     window.location.href = '<?php echo esc_url( home_url( '/inventory/' ) ); ?>';
                                 }, 1500 );
                             } else {
+                                // If quantity exceeded, update the max attribute and hint text.
+                                if ( res.data && res.data.code === 'qty_exceeded' && res.data.available ) {
+                                    var qtyInput = form.querySelector( '[name="quantity"]' );
+                                    var hint     = form.querySelector( '.xen-qty-available-hint' );
+                                    if ( qtyInput ) { qtyInput.setAttribute( 'max', res.data.available ); }
+                                    if ( hint )     { hint.textContent = res.data.available + ' of <?php echo (int) $total_qty; ?> available'; }
+                                }
                                 btn.disabled = false;
                             }
                         } )

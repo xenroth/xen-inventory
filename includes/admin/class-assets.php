@@ -74,17 +74,20 @@ class Assets {
         );
 
         wp_localize_script( 'xen-inventory-admin', 'xenInventoryAdmin', [
-            'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
-            'nonce'        => wp_create_nonce( 'xen_admin_nonce' ),
-            'returnNonce'  => wp_create_nonce( 'xen_return_nonce' ),
-            'updateNonce'  => wp_create_nonce( 'xen_update_borrow' ),
-            'i18n'         => [
-                'confirmDelete' => __( 'Are you sure you want to delete this log entry?', 'xen-inventory' ),
-                'confirmReturn' => __( 'Mark this item as returned?', 'xen-inventory' ),
-                'saving'        => __( 'Saving…', 'xen-inventory' ),
-                'saved'         => __( 'Saved.', 'xen-inventory' ),
-                'returned'      => __( 'Returned', 'xen-inventory' ),
-                'copied'        => __( 'Copied!', 'xen-inventory' ),
+            'ajaxUrl'              => admin_url( 'admin-ajax.php' ),
+            'nonce'                => wp_create_nonce( 'xen_admin_nonce' ),
+            'returnNonce'          => wp_create_nonce( 'xen_return_nonce' ),
+            'updateNonce'          => wp_create_nonce( 'xen_update_borrow' ),
+            'deleteBorrowerNonce'  => wp_create_nonce( 'xen_delete_borrower' ),
+            'i18n'                 => [
+                'confirmDelete'         => __( 'Are you sure you want to delete this log entry?', 'xen-inventory' ),
+                'confirmDeleteBorrower' => __( 'Delete this borrower? Their borrow records will be kept but the borrower account will be marked as Deleted.', 'xen-inventory' ),
+                'confirmReturn'         => __( 'Mark this item as returned?', 'xen-inventory' ),
+                'saving'                => __( 'Saving…', 'xen-inventory' ),
+                'deleting'              => __( 'Deleting…', 'xen-inventory' ),
+                'saved'                 => __( 'Saved.', 'xen-inventory' ),
+                'returned'              => __( 'Returned', 'xen-inventory' ),
+                'copied'                => __( 'Copied!', 'xen-inventory' ),
             ],
         ] );
     }

@@ -21,6 +21,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Grab and sanitize the entity name URL param.
 $view_entity = isset( $_GET['xen_entity'] ) ? sanitize_text_field( wp_unslash( $_GET['xen_entity'] ) ) : '';
 
+// Deleted-entity lookup (used in both views).
+$deleted_borrowers = get_option( 'xen_deleted_borrowers', [] );
+if ( ! is_array( $deleted_borrowers ) ) { $deleted_borrowers = []; }
+
 // ===========================================================================
 // DETAIL VIEW — history for a single borrower entity
 // ===========================================================================
@@ -76,9 +80,19 @@ if ( '' !== $view_entity ) {
 
     $date_fmt = get_option( 'date_format' );
     $back_url = admin_url( 'admin.php?page=xen-borrowers' );
+    $is_entity_deleted = in_array( strtolower( trim( $view_entity ) ), $deleted_borrowers, true );
     ?>
 
     <div class="wrap xen-admin-wrap xen-borrowers-wrap">
+
+        <?php if ( $is_entity_deleted ) : ?>
+        <div class="notice notice-warning inline" style="margin-bottom:1rem;">
+            <p>
+                <strong><?php esc_html_e( 'Account Status: Deleted', 'xen-inventory' ); ?></strong>
+                &mdash; <?php esc_html_e( 'This borrower has been removed from the active borrowers list. Their borrow records are preserved below.', 'xen-inventory' ); ?>
+            </p>
+        </div>
+        <?php endif; ?>
 
         <!-- Page header -->
         <div class="xen-borrower-detail-header">
@@ -306,8 +320,14 @@ if ( '' !== $view_entity ) {
 // ===========================================================================
 } else {
 
-    $borrowers      = \XenInventory\Models\InventoryLog::get_borrowers_summary();
-    $date_fmt       = get_option( 'date_format' );
+    $borrowers           = \XenInventory\Models\InventoryLog::get_borrowers_summary();
+    $date_fmt            = get_option( 'date_format' );
+
+    // Filter out deleted entities from the active list.
+    $borrowers = array_values( array_filter( $borrowers, function ( $b ) use ( $deleted_borrowers ) {
+        return ! in_array( $b->entity_key, $deleted_borrowers, true );
+    } ) );
+
     $total_entities = count( $borrowers );
 
     // Build a map of entity_key → active borrow records for the dblclick quick-view modal.
@@ -456,6 +476,13 @@ if ( '' !== $view_entity ) {
                         <a href="<?php echo esc_url( $detail_url ); ?>" class="button button-small xen-btn-history">
                             <?php esc_html_e( 'View History', 'xen-inventory' ); ?>
                         </a>
+                        <button
+                            type="button"
+                            class="button button-small xen-delete-borrower"
+                            style="margin-left:4px;color:#b32d2e;"
+                            data-entity-name="<?php echo esc_attr( $row->display_name ); ?>"
+                            aria-label="<?php esc_attr_e( 'Delete borrower', 'xen-inventory' ); ?>"
+                        ><?php esc_html_e( 'Delete', 'xen-inventory' ); ?></button>
                     </td>
                 </tr>
             <?php endforeach; ?>

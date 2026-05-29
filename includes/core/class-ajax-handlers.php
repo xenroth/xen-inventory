@@ -52,6 +52,9 @@ class AjaxHandlers {
 
         // Entity name autocomplete on borrow forms (logged-in users only).
         add_action( 'wp_ajax_xen_get_entity_suggestions', [ $this, 'get_entity_suggestions' ] );
+
+        // Delete a borrower entity (admin only — blocks if active borrows exist).
+        add_action( 'wp_ajax_xen_delete_borrower', [ $this, 'delete_borrower' ] );
     }
 
     // -----------------------------------------------------------------------
@@ -692,5 +695,54 @@ class AjaxHandlers {
 
         fclose( $out );
         exit;
+    }
+
+    /**
+     * Mark a borrower entity as deleted.
+     *
+     * The entity's borrow records are preserved; only the entity_key is added
+     * to the `xen_deleted_borrowers` option so it can be flagged in views.
+     * Deletion is blocked if the entity currently has any open borrow records.
+     */
+    public function delete_borrower(): void {
+        check_ajax_referer( 'xen_delete_borrower', 'nonce' );
+
+        if ( ! current_user_can( 'xen_manage_inventory' ) ) {
+            wp_send_json_error( [ 'message' => __( 'Permission denied.', 'xen-inventory' ) ] );
+        }
+
+        $entity_name = sanitize_text_field( wp_unslash( $_POST['entity_name'] ?? '' ) );
+        if ( '' === $entity_name ) {
+            wp_send_json_error( [ 'message' => __( 'Invalid borrower.', 'xen-inventory' ) ] );
+        }
+
+        $active = \XenInventory\Models\InventoryLog::count_active_borrows_for_entity( $entity_name );
+        if ( $active > 0 ) {
+            wp_send_json_error( [
+                'message' => sprintf(
+                    /* translators: %d: number of open borrow records */
+                    _n(
+                        'Cannot delete: this borrower still has %d active borrow. Return all items first.',
+                        'Cannot delete: this borrower still has %d active borrows. Return all items first.',
+                        $active,
+                        'xen-inventory'
+                    ),
+                    $active
+                ),
+            ] );
+        }
+
+        $entity_key = strtolower( trim( $entity_name ) );
+        $deleted    = get_option( 'xen_deleted_borrowers', [] );
+        if ( ! is_array( $deleted ) ) {
+            $deleted = [];
+        }
+
+        if ( ! in_array( $entity_key, $deleted, true ) ) {
+            $deleted[] = $entity_key;
+            update_option( 'xen_deleted_borrowers', $deleted );
+        }
+
+        wp_send_json_success( [ 'message' => __( 'Borrower deleted.', 'xen-inventory' ) ] );
     }
 }

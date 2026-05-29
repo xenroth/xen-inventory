@@ -135,6 +135,7 @@ get_header();
                         class="xen-btn xen-btn--primary xen-borrow-btn xen-item-detail__cta"
                         data-item-id="<?php echo (int) $item_id; ?>"
                         data-item-title="<?php echo esc_attr( get_the_title() ); ?>"
+                        data-available-qty="<?php echo (int) $available_qty; ?>"
                     >
                         <?php esc_html_e( 'Borrow This Item', 'xen-inventory' ); ?>
                     </button>

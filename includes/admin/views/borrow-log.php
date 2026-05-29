@@ -11,6 +11,10 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+// Load deleted entities for badge display.
+$xen_deleted_borrowers = get_option( 'xen_deleted_borrowers', [] );
+if ( ! is_array( $xen_deleted_borrowers ) ) { $xen_deleted_borrowers = []; }
+
 global $wpdb;
 $table    = $wpdb->prefix . XEN_INVENTORY_LOG_TABLE;
 $per_page = 30;
@@ -196,6 +200,11 @@ $pages = (int) ceil( $total / $per_page );
                             <strong><?php echo esc_html( $log->borrower_name ); ?></strong>
                             <?php if ( ! empty( $log->borrower_full_name ) ) : ?>
                                 <br><span><?php echo esc_html( $log->borrower_full_name ); ?></span>
+                            <?php endif; ?>
+                            <?php
+                            $log_entity_key = strtolower( trim( $log->borrower_full_name ?: ( $log->borrower_name ?? '' ) ) );
+                            if ( $log_entity_key && in_array( $log_entity_key, $xen_deleted_borrowers, true ) ) : ?>
+                                <br><span class="xen-badge xen-badge--deleted" title="<?php esc_attr_e( 'This borrower account has been deleted', 'xen-inventory' ); ?>"><?php esc_html_e( 'Deleted', 'xen-inventory' ); ?></span>
                             <?php endif; ?>
                         </td>
                         <td><?php echo esc_html( $log->borrower_contact ?? '' ); ?></td>

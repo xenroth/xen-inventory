@@ -613,6 +613,29 @@ class InventoryLog {
     }
 
     /**
+     * Count open (not-returned) borrow rows for a given borrower entity.
+     *
+     * Used to prevent deletion of an entity that still has items out.
+     *
+     * @param  string $entity_name The borrower_full_name / entity key to look up.
+     * @return int
+     */
+    public static function count_active_borrows_for_entity( string $entity_name ): int {
+        global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM " . self::table() . "
+                 WHERE LOWER( TRIM( COALESCE( NULLIF( TRIM( borrower_full_name ), '' ), NULLIF( TRIM( borrower_name ), '' ), '(unknown)' ) ) ) = LOWER( %s )
+                   AND action = 'borrowed'
+                   AND date_returned IS NULL",
+                $entity_name
+            )
+        );
+    }
+
+    /**
      * Get published borrow log entries for a specific item, newest first.
      * Only shows borrower name to other users — full contact detail is omitted
      * to protect privacy. Admins see full details via the admin screens.
@@ -621,8 +644,7 @@ class InventoryLog {
      * @param  int $limit   Maximum rows to return (default 20).
      * @return array<int, object>
      */
-    public static function get_public_logs_for_item( int $item_id, int $limit = 20 ): array {
-        global $wpdb;
+    public static function get_public_logs_for_item( int $item_id, int $limit = 20 ): array {        global $wpdb;
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         return $wpdb->get_results(

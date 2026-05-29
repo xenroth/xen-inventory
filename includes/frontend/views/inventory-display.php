@@ -169,6 +169,7 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                                 class="xen-btn xen-btn--primary xen-borrow-btn xen-item-card__cta"
                                 data-item-id="<?php echo (int) get_the_ID(); ?>"
                                 data-item-title="<?php echo esc_attr( get_the_title() ); ?>"
+                                data-available-qty="<?php echo (int) $available_qty; ?>"
                             >
                                 <?php esc_html_e( 'Borrow', 'xen-inventory' ); ?>
                             </button>
@@ -263,6 +264,7 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                 <div class="xen-form__group">
                     <label for="xen-borrow-quantity"><?php esc_html_e( 'Quantity', 'xen-inventory' ); ?></label>
                     <input type="number" id="xen-borrow-quantity" name="quantity" value="1" min="1" required />
+                    <p class="xen-form__hint xen-qty-available-hint"></p>
                 </div>
 
                 <div class="xen-form__group">

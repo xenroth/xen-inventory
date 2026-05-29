@@ -159,10 +159,18 @@ $check_update_url = wp_nonce_url(
                     ?>
                 </h3>
                 <ul class="xen-whats-new-list">
-                    <li><?php esc_html_e( 'My Borrow History: added Status dropdown filter (All / Active / Overdue / Returned)', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'All borrow lists now show most recent records first (reverse-chronological)', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Borrowed filter card: same entity borrowing the same item multiple times now shows one accumulated row with total quantity', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Borrower deletion — admins can delete borrowers; blocked if active borrows exist. Records stay with a "Deleted" badge.', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Borrow form now shows available quantity and enforces it as the max you can enter', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Fixed: "An error occurred" generic fallback replaced by specific server error (e.g. quantity exceeds available stock)', 'xen-inventory' ); ?></li>
                 </ul>
+                <details style="margin-top:.5rem;">
+                    <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.6.5 changes ▸', 'xen-inventory' ); ?></summary>
+                    <ul class="xen-whats-new-list" style="margin-top:.375rem;">
+                        <li><?php esc_html_e( 'My Borrow History: added Status dropdown filter (All / Active / Overdue / Returned)', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'All borrow lists now show most recent records first (reverse-chronological)', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Borrowed filter card: same entity borrowing the same item multiple times now shows one accumulated row with total quantity', 'xen-inventory' ); ?></li>
+                    </ul>
+                </details>
                 <details style="margin-top:.5rem;">
                     <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.6.4 changes ▸', 'xen-inventory' ); ?></summary>
                     <ul class="xen-whats-new-list" style="margin-top:.375rem;">

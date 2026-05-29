@@ -27,8 +27,9 @@
      *
      * @param {number} itemId
      * @param {string} itemTitle
+     * @param {number} availableQty  How many units are currently available to borrow.
      */
-    function openModal( itemId, itemTitle ) {
+    function openModal( itemId, itemTitle, availableQty ) {
         $itemId.val( itemId );
         $modal.find( '.xen-modal__title' ).text(
             /* translators: placeholder is item name */
@@ -42,6 +43,17 @@
             $fullname.val( $form.data( 'user-fullname' ) || '' );
         }
 
+        // Set quantity max and available hint.
+        const $qtyInput = $form.find( '[name="quantity"]' );
+        const $qtyHint  = $form.find( '.xen-qty-available-hint' );
+        if ( availableQty ) {
+            $qtyInput.attr( 'max', availableQty );
+            $qtyHint.text( availableQty + ' ' + ( xenInventory.i18n.available || 'available' ) );
+        } else {
+            $qtyInput.removeAttr( 'max' );
+            $qtyHint.text( '' );
+        }
+
         $modal.removeAttr( 'hidden' );
         $modal.find( '#xen-borrow-fullname' ).trigger( 'focus' );
     }
@@ -49,13 +61,16 @@
     function closeModal() {
         $modal.attr( 'hidden', '' );
         $form[ 0 ].reset();
+        $form.find( '.xen-qty-available-hint' ).text( '' );
+        $form.find( '[name="quantity"]' ).removeAttr( 'max' );
     }
 
     // Open on "Borrow" button click.
     $( document ).on( 'click', '.xen-borrow-btn', function () {
-        const itemId    = $( this ).data( 'item-id' );
-        const itemTitle = $( this ).data( 'item-title' );
-        openModal( itemId, itemTitle );
+        const itemId       = $( this ).data( 'item-id' );
+        const itemTitle    = $( this ).data( 'item-title' );
+        const availableQty = parseInt( $( this ).data( 'available-qty' ), 10 ) || 0;
+        openModal( itemId, itemTitle, availableQty );
     } );
 
     // Close on overlay / cancel.
@@ -108,16 +123,32 @@
                     if ( errData.code === 'qty_exceeded' && errData.available ) {
                         var $qtyField = $form.find( '[name="quantity"]' );
                         $qtyField.val( errData.available ).attr( 'max', errData.available );
+                        $form.find( '.xen-qty-available-hint' )
+                             .text( errData.available + ' ' + ( xenInventory.i18n.available || 'available' ) );
                     }
                     $message
                         .addClass( 'xen-form__message--error' )
                         .text( errData.message || xenInventory.i18n.errorGeneric );
                 }
             } )
-            .fail( function () {
+            .fail( function ( jqXHR ) {
+                var errMsg  = xenInventory.i18n.errorGeneric || 'An error occurred. Please try again.';
+                var errData = {};
+                try {
+                    var resp = jqXHR.responseJSON || JSON.parse( jqXHR.responseText );
+                    if ( resp && resp.data ) { errData = resp.data; }
+                } catch (ex) {}
+                if ( errData.message ) { errMsg = errData.message; }
+                // Qty exceeded: adjust the quantity field and hint.
+                if ( errData.code === 'qty_exceeded' && errData.available ) {
+                    var $qtyField = $form.find( '[name="quantity"]' );
+                    $qtyField.val( errData.available ).attr( 'max', errData.available );
+                    $form.find( '.xen-qty-available-hint' )
+                         .text( errData.available + ' ' + ( xenInventory.i18n.available || 'available' ) );
+                }
                 $message
                     .addClass( 'xen-form__message--error' )
-                    .text( xenInventory.i18n.errorGeneric );
+                    .text( errMsg );
             } )
             .always( function () {
                 $btn.prop( 'disabled', false ).text( xenInventory.i18n.confirmBorrow || 'Confirm Borrow' );

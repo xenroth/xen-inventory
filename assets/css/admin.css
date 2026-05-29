@@ -90,6 +90,7 @@
 .xen-badge--open        { background: #dbeafe; color: #1e40af; }
 .xen-badge--note        { background: #f1f5f9; color: #475569; }
 .xen-badge--overdue     { background: #fee2e2; color: #991b1b; font-weight: 700; }
+.xen-badge--deleted     { background: #f1f5f9; color: #64748b; }
 
 /* --------------------------------------------------------------------------
    Borrow Log Filters

@@ -5,6 +5,31 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.6.6 — 2026-05-30 =
+------------------------------------------------------------------------------
+
+== Added ==
+* Borrower deletion — Admins can now delete a borrower entity from the
+  Borrowers list. Deletion is blocked if the entity still has open (unreturned)
+  borrows; a clear error message states how many active borrows remain.
+  All borrow records are preserved after deletion; they continue to appear in
+  the Borrow Log with a "Deleted" badge next to the borrower name. The
+  borrower's detail page shows an "Account Status: Deleted" banner.
+* Available-quantity hint in the borrow form — the quantity field on both the
+  inline modal and the standalone borrow page now shows "X available" so
+  borrowers know the current stock before submitting. The standalone borrow
+  page header also shows "Available: X" alongside "Total stock: Y".
+* Borrow quantity max attribute now uses the real available quantity (not total
+  stock), preventing the form from accepting a number greater than what is
+  currently borrowable.
+
+== Fixed ==
+* Borrow form error messages — when quantity exceeds available stock the modal
+  now displays the server's specific message (e.g. "Only 2 units available")
+  instead of the generic "An error occurred" fallback. The quantity field and
+  hint text are updated automatically to reflect the actual available amount.
+
+------------------------------------------------------------------------------
 = 1.6.5 — 2026-05-29 =
 ------------------------------------------------------------------------------
 

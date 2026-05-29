@@ -70,6 +70,46 @@
     } );
 
     // -----------------------------------------------------------------------
+    // Delete a borrower entity via AJAX.
+    // -----------------------------------------------------------------------
+
+    $( document ).on( 'click', '.xen-delete-borrower', function () {
+        if ( ! window.confirm( xenInventoryAdmin.i18n.confirmDeleteBorrower ) ) {
+            return;
+        }
+
+        const $btn        = $( this );
+        const entityName  = $btn.data( 'entity-name' );
+        const $row        = $btn.closest( 'tr' );
+
+        $btn.prop( 'disabled', true ).text( xenInventoryAdmin.i18n.deleting );
+
+        $.post( xenInventoryAdmin.ajaxUrl, {
+            action:       'xen_delete_borrower',
+            nonce:        xenInventoryAdmin.deleteBorrowerNonce,
+            entity_name:  entityName,
+        } )
+        .done( function ( response ) {
+            if ( response.success ) {
+                // Replace the Actions cell content with a Deleted badge.
+                $btn.closest( 'td' ).html( '<span class="xen-badge xen-badge--deleted">Deleted</span>' );
+            } else {
+                alert( response.data ? response.data.message : xenInventoryAdmin.i18n.confirmDeleteBorrower );
+                $btn.prop( 'disabled', false ).text( 'Delete' );
+            }
+        } )
+        .fail( function ( jqXHR ) {
+            var msg = xenInventoryAdmin.i18n.confirmDeleteBorrower;
+            try {
+                var resp = jqXHR.responseJSON || JSON.parse( jqXHR.responseText );
+                if ( resp && resp.data && resp.data.message ) { msg = resp.data.message; }
+            } catch (e) {}
+            alert( msg );
+            $btn.prop( 'disabled', false ).text( 'Delete' );
+        } );
+    } );
+
+    // -----------------------------------------------------------------------
     // Mark a borrow log entry as returned via AJAX — admin return modal.
     // -----------------------------------------------------------------------
 
