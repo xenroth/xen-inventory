@@ -587,7 +587,7 @@ $current_status = sanitize_key( $_GET['xen_status'] ?? $atts['status'] );
                     <?php esc_html_e( 'Item Condition on Return', 'xen-inventory' ); ?> <span class="xen-required-star" aria-hidden="true">*</span>
                 </label>
                 <select id="xen-return-confirm-condition" required style="width:100%;padding:.4rem .5rem;border:1px solid #ccc;border-radius:4px;">
-                    <option value=""><?php esc_html_e( '\u2014 Select condition \u2014', 'xen-inventory' ); ?></option>
+                    <option value=""><?php esc_html_e( '— Select condition —', 'xen-inventory' ); ?></option>
                     <option value="good"><?php esc_html_e( '✅ In condition / Usable', 'xen-inventory' ); ?></option>
                     <option value="slight_damage"><?php esc_html_e( '⚠️ Slightly damaged / torn', 'xen-inventory' ); ?></option>
                     <option value="total_damage"><?php esc_html_e( '❌ Totally damaged / unusable', 'xen-inventory' ); ?></option>

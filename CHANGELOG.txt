@@ -5,6 +5,17 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.6.4 — 2026-05-29 =
+------------------------------------------------------------------------------
+
+== Fixed ==
+* PHP single-quoted strings in `inventory-display.php` and `page-borrow.php`
+  contained literal `\u2014` sequences which PHP does not interpret as Unicode
+  in single-quoted context — causing `\u2014 Select condition \u2014` and
+  `(mobile or Facebook \u2014 optional)` to render as plain text in the
+  browser. Both occurrences replaced with the actual em dash character (—).
+
+------------------------------------------------------------------------------
 = 1.6.3 — 2026-05-29 =
 ------------------------------------------------------------------------------
 

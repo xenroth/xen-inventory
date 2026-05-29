@@ -112,7 +112,7 @@ get_header();
                     <div class="xen-form__group">
                         <label for="xen-bp-contact">
                             <?php esc_html_e( 'Contact', 'xen-inventory' ); ?>
-                            <span class="xen-form__optional"><?php esc_html_e( '(mobile or Facebook \u2014 optional)', 'xen-inventory' ); ?></span>
+                            <span class="xen-form__optional"><?php esc_html_e( '(mobile or Facebook — optional)', 'xen-inventory' ); ?></span>
                         </label>
                         <input
                             type="text"

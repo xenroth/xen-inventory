@@ -159,18 +159,14 @@ $check_update_url = wp_nonce_url(
                     ?>
                 </h3>
                 <ul class="xen-whats-new-list">
-                    <li><?php esc_html_e( 'Entity name autocomplete on all borrow forms', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Dashboard: What\'s New shows multi-version history', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Dashboard layout: Getting Started moved to its own row', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Fixed: em dash rendered as literal text in condition dropdown and contact label', 'xen-inventory' ); ?></li>
                 </ul>
                 <details style="margin-top:.5rem;">
-                    <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.6.2 changes ▸', 'xen-inventory' ); ?></summary>
+                    <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.6.3 changes ▸', 'xen-inventory' ); ?></summary>
                     <ul class="xen-whats-new-list" style="margin-top:.375rem;">
-                        <li><?php esc_html_e( 'Dashboard recent activity: dblclick + Edit/Return quick-actions', 'xen-inventory' ); ?></li>
-                        <li><?php esc_html_e( 'Return modal: optional Return Date &amp; Time field', 'xen-inventory' ); ?></li>
-                        <li><?php esc_html_e( 'Borrower list: dblclick quick-view modal with active borrows', 'xen-inventory' ); ?></li>
-                        <li><?php esc_html_e( 'Filter + pagination on borrower history, meta-box &amp; dashboard', 'xen-inventory' ); ?></li>
-                        <li><?php esc_html_e( 'Borrower profile: Associated WP Accounts section hidden', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Entity name autocomplete on all borrow forms', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Dashboard: What\'s New shows multi-version history', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Dashboard layout: Getting Started moved to its own row', 'xen-inventory' ); ?></li>
                     </ul>
                 </details>
             </div>
