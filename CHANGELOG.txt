@@ -5,6 +5,16 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.7.1 — 2026-05-29 =
+------------------------------------------------------------------------------
+
+== Fixed ==
+* Admin dashboard "What's New" card: corrected orphaned </details> markup and
+  updated content to reflect v1.7.0 changes (calendar return modal, borrower
+  pill-card layout, wp_unslash hardening); v1.6.7 and v1.6.6 entries demoted
+  to collapsible sections.
+
+------------------------------------------------------------------------------
 = 1.7.0 — 2026-05-29 =
 ------------------------------------------------------------------------------
 
