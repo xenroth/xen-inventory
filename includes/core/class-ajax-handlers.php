@@ -82,11 +82,11 @@ class AjaxHandlers {
 
         $item_id            = absint( $_POST['item_id'] ?? 0 );
         $quantity           = absint( $_POST['quantity'] ?? 1 );
-        $date_due           = sanitize_text_field( $_POST['date_due']            ?? '' );
-        $notes              = sanitize_textarea_field( $_POST['notes']           ?? '' );
-        $borrower_full_name = sanitize_text_field( $_POST['borrower_full_name'] ?? '' );
-        $borrower_contact   = sanitize_text_field( $_POST['borrower_contact']   ?? '' );
-        $borrow_tags        = sanitize_text_field( $_POST['borrow_tags']        ?? '' );
+        $date_due           = sanitize_text_field(    wp_unslash( $_POST['date_due']            ?? '' ) );
+        $notes              = sanitize_textarea_field( wp_unslash( $_POST['notes']              ?? '' ) );
+        $borrower_full_name = sanitize_text_field(    wp_unslash( $_POST['borrower_full_name']  ?? '' ) );
+        $borrower_contact   = sanitize_text_field(    wp_unslash( $_POST['borrower_contact']    ?? '' ) );
+        $borrow_tags        = sanitize_text_field(    wp_unslash( $_POST['borrow_tags']         ?? '' ) );
 
         if ( ! $item_id ) {
             wp_send_json_error( [ 'message' => __( 'Invalid item.', 'xen-inventory' ) ], 400 );
@@ -485,8 +485,8 @@ class AjaxHandlers {
     public function get_calendar_events(): void {
         check_ajax_referer( 'xen_calendar_nonce', 'nonce' );
 
-        $start = sanitize_text_field( $_GET['start'] ?? '' );
-        $end   = sanitize_text_field( $_GET['end']   ?? '' );
+        $start = sanitize_text_field( wp_unslash( $_GET['start'] ?? '' ) );
+        $end   = sanitize_text_field( wp_unslash( $_GET['end']   ?? '' ) );
 
         $events = \XenInventory\Models\InventoryLog::get_calendar_events( $start, $end );
 

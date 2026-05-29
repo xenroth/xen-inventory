@@ -5,6 +5,38 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.7.0 — 2026-05-29 =
+------------------------------------------------------------------------------
+
+== Fixed ==
+* Calendar day-modal Return button — replaced the bare `window.prompt` + empty-
+  notes shortcut with a proper "Return Item" modal that includes:
+    - Quantity-returning field (visible only when the borrowed qty > 1).
+    - Item-condition drop-down (✅ Usable / ⚠️ Slightly damaged / ❌ Unusable).
+    - Return Remarks textarea (mandatory, matching the server-side requirement).
+  Previously the calendar return action always sent an empty `notes` value and
+  no `item_condition`, causing every return from the calendar to fail with
+  "Return remarks are required." / "Please select the item condition."
+
+* Inventory display — borrowed-items borrower list is now displayed as centred,
+  card-style pills that wrap to the next row instead of a flat horizontal run
+  that clipped or misaligned on overflow. Each pill shows the borrower name,
+  contact, and borrow meta (qty × due date) stacked vertically in the centre
+  of the card, and the list itself is centred within the item card body.
+
+== Security ==
+* Added missing `wp_unslash()` wrappers around all `$_GET` / `$_POST` reads
+  that were passing superglobals directly to `sanitize_text_field()` or
+  `sanitize_key()` without unslashing first:
+    - `class-ajax-handlers.php`: `borrow_item()` POST fields (date_due, notes,
+      borrower_full_name, borrower_contact, borrow_tags) and
+      `get_calendar_events()` GET fields (start, end).
+    - `admin/views/borrow-log.php`: xen_search, xen_status, xen_date_from,
+      xen_date_to filter inputs.
+    - `admin/views/audit-log.php`: xen_action, xen_date_from, xen_date_to
+      filter inputs.
+
+------------------------------------------------------------------------------
 = 1.6.7 — 2026-05-30 =
 ------------------------------------------------------------------------------
 

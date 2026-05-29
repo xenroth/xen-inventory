@@ -17,10 +17,10 @@ $current  = max( 1, absint( $_GET['paged'] ?? 1 ) );
 $offset   = ( $current - 1 ) * $per_page;
 
 // --- Filter inputs ---
-$filter_action    = sanitize_key( $_GET['xen_action']    ?? '' );
-$filter_user      = absint( $_GET['xen_user']            ?? 0 );
-$filter_date_from = sanitize_text_field( $_GET['xen_date_from'] ?? '' );
-$filter_date_to   = sanitize_text_field( $_GET['xen_date_to']   ?? '' );
+$filter_action    = sanitize_key(         wp_unslash( $_GET['xen_action']    ?? '' ) );
+$filter_user      = absint(                               $_GET['xen_user']     ?? 0 );
+$filter_date_from = sanitize_text_field( wp_unslash( $_GET['xen_date_from'] ?? '' ) );
+$filter_date_to   = sanitize_text_field( wp_unslash( $_GET['xen_date_to']   ?? '' ) );
 
 if ( $filter_date_from && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $filter_date_from ) ) {
     $filter_date_from = '';

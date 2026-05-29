@@ -254,49 +254,140 @@
                 }
 
                 if ( returnBtn ) {
-                    var logId  = returnBtn.getAttribute( 'data-log-id' );
-                    var qty    = parseInt( returnBtn.getAttribute( 'data-qty' ) || 1, 10 );
-                    var answer = qty > 1
-                        ? window.prompt( 'How many items are being returned? (1 – ' + qty + ')', qty )
-                        : ( window.confirm( 'Mark this item as returned?' ) ? qty : null );
+                    var logId = returnBtn.getAttribute( 'data-log-id' );
+                    var qty   = parseInt( returnBtn.getAttribute( 'data-qty' ) || 1, 10 );
+                    openCalReturnModal( logId, qty, returnBtn );
+                }
+            } );
+        }
 
-                    if ( answer === null ) return;
-                    var qtyReturned = parseInt( answer, 10 );
-                    if ( isNaN( qtyReturned ) || qtyReturned < 1 || qtyReturned > qty ) {
-                        alert( 'Please enter a number between 1 and ' + qty + '.' );
+        // ------------------------------------------------------------------
+        // Calendar Return modal — replaces window.prompt for Return action.
+        // Requires: #xen-cal-return-modal in inventory-calendar.php.
+        // ------------------------------------------------------------------
+
+        var calReturnModal      = document.getElementById( 'xen-cal-return-modal' );
+        var calReturnClose      = document.getElementById( 'xen-cal-return-close' );
+        var calReturnCancel     = document.getElementById( 'xen-cal-return-cancel' );
+        var calReturnBackdrop   = document.getElementById( 'xen-cal-return-backdrop' );
+        var calReturnSubmit     = document.getElementById( 'xen-cal-return-submit' );
+        var calReturnItemName   = document.getElementById( 'xen-cal-return-item-name' );
+        var calReturnQtyWrap    = document.getElementById( 'xen-cal-return-qty-wrap' );
+        var calReturnQtyInput   = document.getElementById( 'xen-cal-return-qty' );
+        var calReturnQtyMax     = document.getElementById( 'xen-cal-return-qty-max' );
+        var calReturnCondition  = document.getElementById( 'xen-cal-return-condition' );
+        var calReturnNotes      = document.getElementById( 'xen-cal-return-notes' );
+        var calReturnStatus     = document.getElementById( 'xen-cal-return-status' );
+
+        // State kept while the modal is open.
+        var _calReturnLogId   = null;
+        var _calReturnTotalQty = 1;
+        var _calReturnTriggerBtn = null; // the Return button that opened the modal
+
+        function openCalReturnModal( logId, totalQty, triggerBtn ) {
+            if ( ! calReturnModal ) return;
+
+            _calReturnLogId      = logId;
+            _calReturnTotalQty   = totalQty;
+            _calReturnTriggerBtn = triggerBtn;
+
+            // Derive item name from the trigger button's ancestor list item.
+            var li = triggerBtn ? triggerBtn.closest( '.xen-day-modal__item' ) : null;
+            var itemName = li ? ( li.dataset.itemTitle || '' ) : '';
+            if ( calReturnItemName ) calReturnItemName.textContent = itemName || ( 'Log #' + logId );
+
+            if ( totalQty > 1 ) {
+                calReturnQtyInput.value = totalQty;
+                calReturnQtyInput.max   = totalQty;
+                calReturnQtyMax.textContent = '(max ' + totalQty + ')';
+                calReturnQtyWrap.style.display = '';
+            } else {
+                calReturnQtyWrap.style.display = 'none';
+            }
+
+            calReturnCondition.value = '';
+            calReturnNotes.value     = '';
+            calReturnStatus.textContent = '';
+            calReturnSubmit.disabled = false;
+            calReturnSubmit.textContent = 'Confirm Return';
+
+            calReturnModal.style.display = 'flex';
+            calReturnCondition.focus();
+        }
+
+        function closeCalReturnModal() {
+            if ( calReturnModal ) calReturnModal.style.display = 'none';
+            _calReturnLogId      = null;
+            _calReturnTriggerBtn = null;
+        }
+
+        if ( calReturnClose )    calReturnClose.addEventListener(    'click', closeCalReturnModal );
+        if ( calReturnCancel )   calReturnCancel.addEventListener(   'click', closeCalReturnModal );
+        if ( calReturnBackdrop ) calReturnBackdrop.addEventListener( 'click', closeCalReturnModal );
+
+        document.addEventListener( 'keydown', function ( e ) {
+            if ( 'Escape' === e.key && calReturnModal && calReturnModal.style.display !== 'none' ) {
+                closeCalReturnModal();
+            }
+        } );
+
+        if ( calReturnSubmit ) {
+            calReturnSubmit.addEventListener( 'click', function () {
+                if ( ! _calReturnLogId ) return;
+
+                var qtyReturned = _calReturnTotalQty;
+                if ( _calReturnTotalQty > 1 ) {
+                    qtyReturned = parseInt( calReturnQtyInput.value, 10 );
+                    if ( isNaN( qtyReturned ) || qtyReturned < 1 || qtyReturned > _calReturnTotalQty ) {
+                        calReturnStatus.textContent = 'Please enter a number between 1 and ' + _calReturnTotalQty + '.';
                         return;
                     }
-
-                    returnBtn.disabled = true;
-                    returnBtn.textContent = 'Saving…';
-
-                    var body = new URLSearchParams( {
-                        action:       'xen_return_item',
-                        nonce:        xenCalendar.returnNonce,
-                        log_id:       logId,
-                        qty_returned: qtyReturned,
-                        notes:        '',
-                    } );
-
-                    fetch( xenCalendar.ajaxUrl, { method: 'POST', body: body } )
-                        .then( function ( res ) { return res.json(); } )
-                        .then( function ( data ) {
-                            if ( data.success ) {
-                                calendar.refetchEvents();
-                                hideDayModal();
-                            } else {
-                                var msg = data.data && data.data.message ? data.data.message : 'Error.';
-                                alert( msg );
-                                returnBtn.disabled = false;
-                                returnBtn.textContent = 'Return';
-                            }
-                        } )
-                        .catch( function () {
-                            alert( 'Network error. Please try again.' );
-                            returnBtn.disabled = false;
-                            returnBtn.textContent = 'Return';
-                        } );
                 }
+
+                var condition = calReturnCondition.value;
+                if ( ! condition ) {
+                    calReturnStatus.textContent = 'Please select the item condition.';
+                    return;
+                }
+
+                var notes = calReturnNotes.value.trim();
+                if ( ! notes ) {
+                    calReturnStatus.textContent = 'Return remarks are required.';
+                    return;
+                }
+
+                calReturnStatus.textContent = '';
+                calReturnSubmit.disabled    = true;
+                calReturnSubmit.textContent = 'Saving…';
+
+                var body = new URLSearchParams( {
+                    action:         'xen_return_item',
+                    nonce:          xenCalendar.returnNonce,
+                    log_id:         _calReturnLogId,
+                    qty_returned:   qtyReturned,
+                    return_notes:   notes,
+                    item_condition: condition,
+                } );
+
+                fetch( xenCalendar.ajaxUrl, { method: 'POST', body: body } )
+                    .then( function ( res ) { return res.json(); } )
+                    .then( function ( data ) {
+                        if ( data.success ) {
+                            closeCalReturnModal();
+                            calendar.refetchEvents();
+                            hideDayModal();
+                        } else {
+                            var msg = data.data && data.data.message ? data.data.message : 'Error.';
+                            calReturnStatus.textContent = msg;
+                            calReturnSubmit.disabled    = false;
+                            calReturnSubmit.textContent = 'Confirm Return';
+                        }
+                    } )
+                    .catch( function () {
+                        calReturnStatus.textContent = 'Network error. Please try again.';
+                        calReturnSubmit.disabled    = false;
+                        calReturnSubmit.textContent = 'Confirm Return';
+                    } );
             } );
         }
 
