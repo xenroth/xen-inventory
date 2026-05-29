@@ -159,32 +159,30 @@ $check_update_url = wp_nonce_url(
                     ?>
                 </h3>
                 <ul class="xen-whats-new-list">
-                    <li><?php esc_html_e( 'Calendar Return button now opens a proper modal — collect item condition and mandatory remarks before submitting (fixes silent return failures from the calendar view).', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Borrowed-filter item cards: borrower list is now centred pill-cards that wrap to the next row on overflow instead of cutting off.', 'xen-inventory' ); ?></li>
-                    <li><?php esc_html_e( 'Security: added missing wp_unslash() on all superglobal reads in AJAX handlers and admin filter views.', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Calendar: double-clicking an event chip now opens the Return Item modal (condition + remarks) instead of the Edit modal. Already-returned events still open Edit.', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Calendar: after returning from the day-detail modal the modal stays open and auto-refreshes — the returned item stays visible with a green "Returned" badge.', 'xen-inventory' ); ?></li>
+                    <li><?php esc_html_e( 'Calendar month view: each day cell is capped at 5 event chips; overflow shows "+N more — click day to see all" linking straight to the day-detail modal.', 'xen-inventory' ); ?></li>
                 </ul>
+                <details style="margin-top:.5rem;">
+                    <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.7.2 changes ▸', 'xen-inventory' ); ?></summary>
+                    <ul class="xen-whats-new-list" style="margin-top:.375rem;">
+                        <li><?php esc_html_e( 'Fixed: Borrow Log "Action" column now correctly shows "Returned" instead of "Borrowed" for returned records. Historical records are corrected automatically on first admin load.', 'xen-inventory' ); ?></li>
+                    </ul>
+                </details>
+                <details style="margin-top:.5rem;">
+                    <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.7.0 changes ▸', 'xen-inventory' ); ?></summary>
+                    <ul class="xen-whats-new-list" style="margin-top:.375rem;">
+                        <li><?php esc_html_e( 'Calendar Return button now opens a proper modal — collect item condition and mandatory remarks before submitting (fixes silent return failures from the calendar view).', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Borrowed-filter item cards: borrower list is now centred pill-cards that wrap to the next row on overflow instead of cutting off.', 'xen-inventory' ); ?></li>
+                        <li><?php esc_html_e( 'Security: added missing wp_unslash() on all superglobal reads in AJAX handlers and admin filter views.', 'xen-inventory' ); ?></li>
+                    </ul>
+                </details>
                 <details style="margin-top:.5rem;">
                     <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.6.7 changes ▸', 'xen-inventory' ); ?></summary>
                     <ul class="xen-whats-new-list" style="margin-top:.375rem;">
                         <li><?php esc_html_e( 'Borrow calendar now shows returned items in green, partially returned in amber, and still-open borrows in red — colour-coded for instant status recognition.', 'xen-inventory' ); ?></li>
                         <li><?php esc_html_e( 'Calendar history fix: returned borrow records are no longer hidden when browsing previous months — they stay visible on the original borrow date.', 'xen-inventory' ); ?></li>
                         <li><?php esc_html_e( 'Day-modal status chip now shows "Active", "Partially Returned", or "Returned" with matching colour.', 'xen-inventory' ); ?></li>
-                    </ul>
-                </details>
-                <details style="margin-top:.5rem;">
-                    <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.6.6 changes ▸', 'xen-inventory' ); ?></summary>
-                    <ul class="xen-whats-new-list" style="margin-top:.375rem;">
-                        <li><?php esc_html_e( 'Borrower deletion — admins can delete borrowers; blocked if active borrows exist. Records stay with a "Deleted" badge.', 'xen-inventory' ); ?></li>
-                        <li><?php esc_html_e( 'Borrow form now shows available quantity and enforces it as the max you can enter', 'xen-inventory' ); ?></li>
-                        <li><?php esc_html_e( 'Fixed: "An error occurred" generic fallback replaced by specific server error (e.g. quantity exceeds available stock)', 'xen-inventory' ); ?></li>
-                    </ul>
-                </details>
-                <details style="margin-top:.5rem;">
-                    <summary style="font-size:.75rem;color:#64748b;cursor:pointer;"><?php esc_html_e( 'v1.6.5 changes ▸', 'xen-inventory' ); ?></summary>
-                    <ul class="xen-whats-new-list" style="margin-top:.375rem;">
-                        <li><?php esc_html_e( 'My Borrow History: added Status dropdown filter (All / Active / Overdue / Returned)', 'xen-inventory' ); ?></li>
-                        <li><?php esc_html_e( 'All borrow lists now show most recent records first (reverse-chronological)', 'xen-inventory' ); ?></li>
-                        <li><?php esc_html_e( 'Borrowed filter card: same entity borrowing the same item multiple times now shows one accumulated row with total quantity', 'xen-inventory' ); ?></li>
                     </ul>
                 </details>
             </div>
