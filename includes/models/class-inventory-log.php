@@ -69,22 +69,30 @@ class InventoryLog {
     /**
      * Close a log entry (mark item as returned).
      *
-     * @param  int    $log_id Log row ID.
-     * @param  string $notes  Optional closing note.
+     * @param  int    $log_id         Log row ID.
+     * @param  string $return_notes   Mandatory closing note (what was observed on return).
+     * @param  string $item_condition Item condition slug: good | slight_damage | total_damage.
      * @return bool
      */
-    public static function close_log( int $log_id, string $notes = '' ): bool {
+    public static function close_log( int $log_id, string $return_notes = '', string $item_condition = '' ): bool {
         global $wpdb;
+
+        // Build the SET clause dynamically so we only include item_condition when provided.
+        $set_sql = 'date_returned = %s, return_notes = %s';
+        $args    = [ current_time( 'mysql', true ), $return_notes ];
+        if ( '' !== $item_condition ) {
+            $set_sql .= ', item_condition = %s';
+            $args[]   = $item_condition;
+        }
+        $args[] = $log_id;
 
         // Use a raw query so we can include `AND date_returned IS NULL` in WHERE,
         // preventing a double-return from overwriting the original return timestamp.
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
         $rows = $wpdb->query(
             $wpdb->prepare(
-                'UPDATE ' . self::table() . ' SET date_returned = %s, notes = %s WHERE id = %d AND date_returned IS NULL',
-                current_time( 'mysql', true ),
-                $notes,
-                $log_id
+                'UPDATE ' . self::table() . ' SET ' . $set_sql . ' WHERE id = %d AND date_returned IS NULL',
+                ...$args
             )
         );
 
@@ -120,7 +128,7 @@ class InventoryLog {
      * @param  string $notes        Optional return note.
      * @return bool   True on success, false on DB error or invalid input.
      */
-    public static function partial_return( int $log_id, int $qty_returned, string $notes = '' ): bool {
+    public static function partial_return( int $log_id, int $qty_returned, string $return_notes = '', string $item_condition = '' ): bool {
         global $wpdb;
 
         if ( $qty_returned < 1 ) {
@@ -144,7 +152,7 @@ class InventoryLog {
 
         // Cap at original quantity — can't return more than was borrowed.
         if ( $qty_returned >= $original_qty ) {
-            return self::close_log( $log_id, $notes );
+            return self::close_log( $log_id, $return_notes, $item_condition );
         }
 
         // Reduce the outstanding quantity on the original row.
@@ -177,9 +185,11 @@ class InventoryLog {
                 'date_borrowed'      => $log->date_borrowed,
                 'date_due'           => $log->date_due,
                 'date_returned'      => current_time( 'mysql', true ),
-                'notes'              => $notes,
+                'notes'              => '',
+                'return_notes'       => $return_notes,
+                'item_condition'     => '' !== $item_condition ? $item_condition : null,
             ],
-            [ '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s' ]
+            [ '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s' ]
         );
 
         // Restore item status to 'available' if any units are now free.
@@ -204,7 +214,7 @@ class InventoryLog {
     public static function update_log( int $id, array $data ): bool {
         global $wpdb;
 
-        $allowed = [ 'notes', 'date_due', 'date_returned', 'action' ];
+        $allowed = [ 'notes', 'date_due', 'date_returned', 'action', 'return_notes', 'item_condition' ];
         $set_parts = [];
         $values    = [];
 
@@ -592,9 +602,10 @@ class InventoryLog {
         return $wpdb->get_results(
             $wpdb->prepare(
                 'SELECT id, item_id, user_id,
-                        borrower_full_name, borrower_name,
+                        borrower_full_name, borrower_name, borrower_contact,
                         action, quantity, borrow_tags,
-                        date_borrowed, date_due, date_returned, notes
+                        date_borrowed, date_due, date_returned, notes,
+                        return_notes, item_condition
                  FROM ' . self::table() . "
                  WHERE item_id = %d
                    AND action = 'borrowed'

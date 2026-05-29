@@ -80,6 +80,8 @@ class Activator {
             date_due      DATETIME                     DEFAULT NULL,
             date_returned DATETIME                     DEFAULT NULL,
             notes         TEXT,
+            return_notes  TEXT,
+            item_condition VARCHAR(50)         DEFAULT NULL,
             created_at    DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             KEY item_id (item_id),

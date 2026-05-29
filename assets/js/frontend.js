@@ -125,75 +125,118 @@
     } );
 
     // -----------------------------------------------------------------------
-    // Return Item AJAX
+    // Return Item — open the return confirmation modal.
     // -----------------------------------------------------------------------
 
-    $( document ).on( 'click', '.xen-return-btn', function () {
-        const $btn      = $( this );
-        const logId     = $btn.data( 'log-id' );
-        const $row      = $btn.closest( '.xen-return-row' );
-        const $notes    = $row.find( '.xen-return-notes' );
-        const $qtyInput = $row.find( '.xen-return-qty' );
-        const totalQty  = parseInt( $btn.data( 'qty' ) || 1, 10 );
-        const qtyReturn = parseInt( $qtyInput.val() || totalQty, 10 );
-        const isPartial = qtyReturn > 0 && qtyReturn < totalQty;
+    var conditionLabels = {
+        'good':         'In condition / Usable',
+        'slight_damage':'Slightly damaged / torn',
+        'total_damage': 'Totally damaged / unusable'
+    };
+    function conditionLabel( val ) {
+        return val ? ( conditionLabels[ val ] || val ) : '';
+    }
 
-        if ( isPartial ) {
-            var partialMsg = ( xenInventory.i18n.confirmPartialReturn || 'Return %d item(s)? The rest will remain as borrowed.' )
-                .replace( '%d', qtyReturn );
-            if ( ! window.confirm( partialMsg ) ) {
-                return;
-            }
+    function openReturnModal( logId, totalQty, qtyReturn, itemTitle ) {
+        var $retModal = $( '#xen-return-confirm-modal' );
+        if ( ! $retModal.length ) return;
+        $retModal.data( 'log-id',     logId )
+                 .data( 'total-qty',  totalQty )
+                 .data( 'qty-return', qtyReturn );
+        $( '#xen-return-confirm-item-name' ).text( itemTitle || 'Log #' + logId );
+        $( '#xen-return-confirm-condition' ).val( '' );
+        $( '#xen-return-confirm-notes' ).val( '' );
+        $( '#xen-return-confirm-status' ).text( '' );
+        $( '#xen-return-confirm-submit' ).prop( 'disabled', false ).text( xenInventory.i18n.confirmReturn || 'Confirm Return' );
+        if ( totalQty > 1 ) {
+            $( '#xen-return-confirm-qty' ).val( qtyReturn ).attr( 'max', totalQty );
+            $( '#xen-return-confirm-qty-max-label' ).text( '(max ' + totalQty + ')' );
+            $( '#xen-return-confirm-qty-wrap' ).show();
         } else {
-            if ( ! window.confirm( xenInventory.i18n.confirm ) ) {
+            $( '#xen-return-confirm-qty-wrap' ).hide();
+        }
+        $retModal.css( 'display', 'flex' );
+        $( '#xen-return-confirm-condition' ).trigger( 'focus' );
+    }
+
+    function closeReturnModal() {
+        $( '#xen-return-confirm-modal' ).css( 'display', 'none' );
+    }
+
+    $( document ).on( 'click', '.xen-return-btn', function () {
+        var $btn      = $( this );
+        var logId     = $btn.data( 'log-id' );
+        var $row      = $btn.closest( '.xen-return-row' );
+        var totalQty  = parseInt( $btn.data( 'qty' ) || 1, 10 );
+        var $qtyInput = $row.find( '.xen-return-qty' );
+        var qtyReturn = parseInt( $qtyInput.val() || totalQty, 10 );
+        var itemTitle = $row.data( 'item-title' ) || '';
+        openReturnModal( logId, totalQty, qtyReturn, itemTitle );
+    } );
+
+    $( document ).on( 'click', '#xen-return-confirm-submit', function () {
+        var $retModal  = $( '#xen-return-confirm-modal' );
+        var logId      = $retModal.data( 'log-id' );
+        var totalQty   = $retModal.data( 'total-qty' );
+        var condition  = $( '#xen-return-confirm-condition' ).val();
+        var notes      = $.trim( $( '#xen-return-confirm-notes' ).val() );
+        var $status    = $( '#xen-return-confirm-status' );
+        var $submit    = $( this );
+
+        var qtyReturned = totalQty;
+        if ( $( '#xen-return-confirm-qty-wrap' ).is( ':visible' ) ) {
+            qtyReturned = parseInt( $( '#xen-return-confirm-qty' ).val(), 10 );
+            if ( isNaN( qtyReturned ) || qtyReturned < 1 || qtyReturned > totalQty ) {
+                $status.css( 'color', '#c00' ).text( 'Please enter a valid quantity (1–' + totalQty + ').' );
                 return;
             }
         }
+        if ( ! condition ) {
+            $status.css( 'color', '#c00' ).text( xenInventory.i18n.conditionRequired || 'Please select the item condition.' );
+            return;
+        }
+        if ( ! notes ) {
+            $status.css( 'color', '#c00' ).text( xenInventory.i18n.returnNotesRequired || 'Return remarks are required.' );
+            return;
+        }
 
-        $btn.prop( 'disabled', true );
+        $submit.prop( 'disabled', true ).text( xenInventory.i18n.saving || 'Saving…' );
+        $status.text( '' );
 
         $.post( xenInventory.ajaxUrl, {
-            action:       'xen_return_item',
-            nonce:        xenInventory.returnNonce,
-            log_id:       logId,
-            qty_returned: qtyReturn,
-            notes:        $notes.val ? $notes.val() : '',
-        } )
-            .done( function ( response ) {
-                if ( response.success ) {
-                    if ( isPartial ) {
-                        // Update the displayed quantity and re-enable the button.
-                        const remaining = totalQty - qtyReturn;
-                        $btn.data( 'qty', remaining );
-                        $qtyInput.attr( 'max', remaining ).val( remaining );
-                        $row.find( '.xen-return-row__qty' ).text(
-                            xenInventory.i18n.qtyBorrowed
-                                ? xenInventory.i18n.qtyBorrowed.replace( '%d', remaining )
-                                : ( 'Qty borrowed: ' + remaining )
-                        );
-                        $notes.val( '' );
-                        $btn.prop( 'disabled', false );
-                    } else {
-                        // Full return — remove the row.
-                        $row.fadeOut( 300, function () { $( this ).remove(); } );
+            action:         'xen_return_item',
+            nonce:          xenInventory.returnNonce,
+            log_id:         logId,
+            qty_returned:   qtyReturned,
+            return_notes:   notes,
+            item_condition: condition,
+        } ).done( function ( resp ) {
+            if ( resp.success ) {
+                closeReturnModal();
+                location.reload();
+            } else {
+                $status.css( 'color', '#c00' ).text( ( resp.data && resp.data.message ) || xenInventory.i18n.errorGeneric );
+                $submit.prop( 'disabled', false ).text( xenInventory.i18n.confirmReturn || 'Confirm Return' );
+            }
+        } ).fail( function () {
+            $status.css( 'color', '#c00' ).text( xenInventory.i18n.errorGeneric );
+            $submit.prop( 'disabled', false ).text( xenInventory.i18n.confirmReturn || 'Confirm Return' );
+        } );
+    } );
 
-                        const $card = $btn.closest( '.xen-item-card' );
-                        if ( $card.length ) {
-                            $card.find( '.xen-status-badge' )
-                                .removeClass( 'xen-status-badge--borrowed' )
-                                .addClass( 'xen-status-badge--available' )
-                                .text( xenInventory.i18n.available || 'Available' );
-                        }
-                    }
-                } else {
-                    alert( response.data.message || xenInventory.i18n.errorGeneric );
-                    $btn.prop( 'disabled', false );
-                }
-            } )
-            .fail( function () {
-                alert( xenInventory.i18n.errorGeneric );
-                $btn.prop( 'disabled', false );
-            } );
+    $( document ).on( 'click', '#xen-return-confirm-cancel, #xen-return-confirm-close, #xen-return-confirm-backdrop', closeReturnModal );
+    $( document ).on( 'keydown.xenReturnModal', function ( e ) {
+        if ( 'Escape' === e.key && $( '#xen-return-confirm-modal' ).is( ':visible' ) ) { closeReturnModal(); }
+    } );
+
+    // Return button on item history table.
+    $( document ).on( 'click', '.xen-item-log-return-btn', function () {
+        var $btn      = $( this );
+        var logId     = $btn.data( 'log-id' );
+        var qty       = parseInt( $btn.data( 'qty' ) || 1, 10 );
+        var $row      = $btn.closest( 'tr' );
+        var itemTitle = $row.data( 'item-title' ) || '';
+        openReturnModal( logId, qty, qty, itemTitle );
     } );
 
     // -----------------------------------------------------------------------
@@ -245,6 +288,16 @@
         if ( $qty.length )      $qty.text( data.qty ? String( data.qty )      : '—' );
         if ( $borrowed.length ) $borrowed.text( data.dateBorrowed              || '—' );
 
+        // Condition and return notes — display + form fields.
+        var $condDisplay   = $( '#xen-log-edit-condition-display' );
+        var $rnDisplay     = $( '#xen-log-edit-return-notes-display' );
+        var $condSelect    = $( '#xen-log-edit-condition' );
+        var $retNotesInput = $( '#xen-log-edit-return-notes' );
+        if ( $condDisplay.length )   $condDisplay.text( conditionLabel( data.itemCondition ) || '—' );
+        if ( $rnDisplay.length )     $rnDisplay.text( data.returnNotes || '—' );
+        if ( $condSelect.length )    $condSelect.val( data.itemCondition || '' );
+        if ( $retNotesInput.length ) $retNotesInput.val( data.returnNotes || '' );
+
         $logEditStatus.text( '' ).removeClass( 'xen-log-edit-modal__status--ok xen-log-edit-modal__status--error' );
         $logEditModal.removeAttr( 'hidden' );
         $logEditDue.trigger( 'focus' );
@@ -275,40 +328,8 @@
         } );
     } );
 
-    // Return button on item history table.
-    $( document ).on( 'click', '.xen-item-log-return-btn', function () {
-        var $btn   = $( this );
-        var logId  = $btn.data( 'log-id' );
-        var qty    = parseInt( $btn.data( 'qty' ) || 1, 10 );
-        var answer = qty > 1
-            ? window.prompt( 'How many are being returned? (1 – ' + qty + ')', qty )
-            : ( window.confirm( 'Mark this item as returned?' ) ? qty : null );
-        if ( null === answer ) return;
-        var qtyRet = parseInt( answer, 10 );
-        if ( isNaN( qtyRet ) || qtyRet < 1 || qtyRet > qty ) {
-            alert( 'Please enter a number between 1 and ' + qty + '.' );
-            return;
-        }
-        $btn.prop( 'disabled', true ).text( '…' );
-        $.post( xenInventory.ajaxUrl, {
-            action:       'xen_return_item',
-            nonce:        xenInventory.returnNonce,
-            log_id:       logId,
-            qty_returned: qtyRet,
-            notes:        '',
-        } ).done( function ( resp ) {
-            if ( resp.success ) {
-                // Reload to reflect updated status.
-                location.reload();
-            } else {
-                alert( ( resp.data && resp.data.message ) || 'Error.' );
-                $btn.prop( 'disabled', false ).text( 'Return' );
-            }
-        } ).fail( function () {
-            alert( xenInventory.i18n.errorGeneric );
-            $btn.prop( 'disabled', false ).text( 'Return' );
-        } );
-    } );
+    // Return button on item history table — now handled above (openReturnModal).
+    // (Old confirm-based handler removed in v1.6.1)
 
     // Double-click on My Borrow History row → open detail/edit modal.
     $( document ).on( 'dblclick', '.xen-my-history-row', function ( e ) {
@@ -320,6 +341,8 @@
             dateDue:          d.dateDue,
             dateRet:          d.dateReturned,
             notes:            d.notes,
+            returnNotes:      d.returnNotes,
+            itemCondition:    d.itemCondition,
             borrower:         d.borrowerName,
             borrowerFullName: d.borrowerFullName,
             borrowerContact:  d.borrowerContact,
@@ -340,6 +363,8 @@
                 dateDue:          d.dateDue,
                 dateReturned:     d.dateReturned,
                 notes:            d.notes,
+                returnNotes:      d.returnNotes,
+                itemCondition:    d.itemCondition,
             } );
         }
     } );
@@ -354,12 +379,14 @@
         $logEditStatus.text( '' ).removeClass( 'xen-log-edit-modal__status--ok xen-log-edit-modal__status--error' );
 
         $.post( xenInventory.ajaxUrl, {
-            action:        'xen_update_borrow',
-            nonce:         xenInventory.updateNonce,
-            log_id:        $logEditId.val(),
-            date_due:      $logEditDue.val(),
-            date_returned: $logEditRet.val(),
-            notes:         $logEditNotes.val(),
+            action:         'xen_update_borrow',
+            nonce:          xenInventory.updateNonce,
+            log_id:         $logEditId.val(),
+            date_due:       $logEditDue.val(),
+            date_returned:  $logEditRet.val(),
+            notes:          $logEditNotes.val(),
+            item_condition: $( '#xen-log-edit-condition' ).val() || '',
+            return_notes:   $( '#xen-log-edit-return-notes' ).val() || '',
         } ).done( function ( resp ) {
             if ( resp.success ) {
                 $logEditStatus.text( ( resp.data && resp.data.message ) || 'Saved.' )
@@ -417,6 +444,8 @@
             [ 'Due',           d.dateDue          ],
             [ 'Returned',      d.dateReturned     ],
             [ 'Notes',         d.notes            ],
+            [ 'Condition',     d.itemCondition ? conditionLabel( d.itemCondition ) : '' ],
+            [ 'Return Notes',  d.returnNotes      ],
         ];
 
         var html = '<table style="width:100%;border-collapse:collapse;font-size:.9rem;">';
@@ -517,6 +546,159 @@
         }
 
         $filter.on( 'input', function () { currentPage = 1; render(); } );
+        render();
+    } )();
+
+    // -----------------------------------------------------------------------
+    // Item detail page (.xen-item-log-row) — double-click to view/edit.
+    // -----------------------------------------------------------------------
+
+    $( document ).on( 'dblclick', '.xen-item-log-row', function ( e ) {
+        e.preventDefault();
+        var $row = $( this );
+        var d    = $row.data();
+        var opened = openLogEditModal( {
+            logId:            d.logId,
+            dateDue:          d.dateDue,
+            dateRet:          d.dateReturned,
+            notes:            d.notes,
+            returnNotes:      d.returnNotes,
+            itemCondition:    d.itemCondition,
+            borrower:         d.borrower,
+            borrowerFullName: d.borrowerFullName,
+            borrowerContact:  d.borrowerContact,
+            borrowTags:       d.borrowTags,
+            qty:              d.qty,
+            dateBorrowed:     d.dateBorrowed,
+            itemTitle:        d.itemTitle,
+        } );
+        if ( ! opened ) {
+            showBorrowDetail( {
+                itemTitle:        d.itemTitle,
+                borrowerFullName: d.borrowerFullName || d.borrower,
+                borrowerContact:  d.borrowerContact,
+                borrowTags:       d.borrowTags,
+                qty:              d.qty,
+                dateBorrowed:     d.dateBorrowed,
+                dateDue:          d.dateDue,
+                dateReturned:     d.dateReturned,
+                notes:            d.notes,
+                returnNotes:      d.returnNotes,
+                itemCondition:    d.itemCondition,
+            } );
+        }
+    } );
+
+    // -----------------------------------------------------------------------
+    // My Borrow History — client-side filter + pagination.
+    // -----------------------------------------------------------------------
+
+    ( function () {
+        var PER_PAGE    = 10;
+        var $rows       = $( '.xen-my-history-row' );
+        if ( ! $rows.length ) return;
+
+        var $filter     = $( '#xen-history-filter' );
+        var $pagination = $( '#xen-history-pagination' );
+        var $count      = $( '#xen-history-count' );
+        var currentPage = 1;
+
+        function getMatching() {
+            var q = $filter.length ? $filter.val().toLowerCase().trim() : '';
+            return $rows.filter( function () {
+                var $r = $( this );
+                return ! q
+                    || ( $r.data( 'item-title' ) || '' ).toLowerCase().indexOf( q ) !== -1
+                    || ( $r.data( 'borrow-tags' ) || '' ).toLowerCase().indexOf( q ) !== -1;
+            } );
+        }
+
+        function render() {
+            $rows.hide();
+            var $matched = getMatching();
+            var total    = $matched.length;
+            $matched.slice( ( currentPage - 1 ) * PER_PAGE, currentPage * PER_PAGE ).show();
+
+            if ( $count.length ) {
+                $count.text( total ? ( total + ' record' + ( total !== 1 ? 's' : '' ) ) : 'No records found' );
+            }
+
+            if ( $pagination.length ) {
+                $pagination.empty();
+                var pages = Math.ceil( total / PER_PAGE );
+                if ( pages > 1 ) {
+                    for ( var i = 1; i <= pages; i++ ) {
+                        ( function ( page ) {
+                            $( '<button type="button" class="xen-btn xen-btn--ghost xen-borrows-page-btn">' )
+                                .text( page )
+                                .css( 'font-weight', page === currentPage ? '700' : '' )
+                                .toggleClass( 'xen-btn--active', page === currentPage )
+                                .on( 'click', function () { currentPage = page; render(); } )
+                                .appendTo( $pagination );
+                        } )( i );
+                    }
+                }
+            }
+        }
+
+        if ( $filter.length ) { $filter.on( 'input', function () { currentPage = 1; render(); } ); }
+        render();
+    } )();
+
+    // -----------------------------------------------------------------------
+    // Item detail borrow history (.xen-item-log-row) — filter + pagination.
+    // -----------------------------------------------------------------------
+
+    ( function () {
+        var PER_PAGE    = 10;
+        var $rows       = $( '.xen-item-log-row' );
+        if ( ! $rows.length ) return;
+
+        var $filter     = $( '#xen-item-history-filter' );
+        var $pagination = $( '#xen-item-history-pagination' );
+        var $count      = $( '#xen-item-history-count' );
+        var currentPage = 1;
+
+        function getMatching() {
+            var q = $filter.length ? $filter.val().toLowerCase().trim() : '';
+            return $rows.filter( function () {
+                var $r = $( this );
+                return ! q
+                    || ( $r.data( 'borrower' ) || '' ).toLowerCase().indexOf( q ) !== -1
+                    || ( $r.data( 'borrower-full-name' ) || '' ).toLowerCase().indexOf( q ) !== -1
+                    || ( $r.data( 'borrow-tags' ) || '' ).toLowerCase().indexOf( q ) !== -1;
+            } );
+        }
+
+        function render() {
+            $rows.hide();
+            var $matched = getMatching();
+            var total    = $matched.length;
+            $matched.slice( ( currentPage - 1 ) * PER_PAGE, currentPage * PER_PAGE ).show();
+
+            if ( $count.length ) {
+                $count.text( total ? ( total + ' record' + ( total !== 1 ? 's' : '' ) ) : 'No records found' );
+            }
+
+            if ( $pagination.length ) {
+                $pagination.empty();
+                var pages = Math.ceil( total / PER_PAGE );
+                if ( pages > 1 ) {
+                    for ( var i = 1; i <= pages; i++ ) {
+                        ( function ( page ) {
+                            $( '<button type="button" class="xen-btn xen-btn--ghost xen-borrows-page-btn">' )
+                                .text( page )
+                                .css( 'font-weight', page === currentPage ? '700' : '' )
+                                .toggleClass( 'xen-btn--active', page === currentPage )
+                                .on( 'click', function () { currentPage = page; render(); } )
+                                .appendTo( $pagination );
+                        } )( i );
+                    }
+                }
+            }
+        }
+
+        if ( $filter.length ) { $filter.on( 'input', function () { currentPage = 1; render(); } ); }
         render();
     } )();
 

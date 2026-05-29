@@ -159,10 +159,11 @@ class AjaxHandlers {
      * Handle return-item AJAX request.
      *
      * Expected POST fields:
-     *   nonce        — xen_return_nonce
-     *   log_id       — int  (the log row to close)
-     *   qty_returned — int  (units being returned; 0 / absent = return all)
-     *   notes        — string (optional)
+     *   nonce          — xen_return_nonce
+     *   log_id         — int  (the log row to close)
+     *   qty_returned   — int  (units being returned; 0 / absent = return all)
+     *   return_notes   — string  (mandatory return remark)
+     *   item_condition — string  (mandatory: good | slight_damage | total_damage)
      *
      * @return void
      */
@@ -173,26 +174,39 @@ class AjaxHandlers {
             wp_send_json_error( [ 'message' => __( 'Permission denied.', 'xen-inventory' ) ], 403 );
         }
 
-        $log_id       = absint( $_POST['log_id']       ?? 0 );
-        $qty_returned = absint( $_POST['qty_returned']  ?? 0 );
-        $notes        = sanitize_textarea_field( $_POST['notes'] ?? '' );
+        $log_id        = absint( $_POST['log_id']        ?? 0 );
+        $qty_returned  = absint( $_POST['qty_returned']   ?? 0 );
+        $return_notes  = sanitize_textarea_field( wp_unslash( $_POST['return_notes']   ?? '' ) );
+        $item_condition = sanitize_key( wp_unslash( $_POST['item_condition'] ?? '' ) );
 
         if ( ! $log_id ) {
             wp_send_json_error( [ 'message' => __( 'Invalid log entry.', 'xen-inventory' ) ], 400 );
         }
 
+        // Return remarks are mandatory.
+        if ( '' === $return_notes ) {
+            wp_send_json_error( [ 'message' => __( 'Return remarks are required.', 'xen-inventory' ) ], 400 );
+        }
+
+        // Item condition is mandatory and must be one of the allowed values.
+        $allowed_conditions = [ 'good', 'slight_damage', 'total_damage' ];
+        if ( ! in_array( $item_condition, $allowed_conditions, true ) ) {
+            wp_send_json_error( [ 'message' => __( 'Please select the item condition on return.', 'xen-inventory' ) ], 400 );
+        }
+
         // qty_returned = 0 means "return all" — delegate to close_log which
         // handles full returns and the item-status update.
         if ( 0 === $qty_returned ) {
-            $ok = \XenInventory\Models\InventoryLog::close_log( $log_id, $notes );
+            $ok = \XenInventory\Models\InventoryLog::close_log( $log_id, $return_notes, $item_condition );
         } else {
-            $ok = \XenInventory\Models\InventoryLog::partial_return( $log_id, $qty_returned, $notes );
+            $ok = \XenInventory\Models\InventoryLog::partial_return( $log_id, $qty_returned, $return_notes, $item_condition );
         }
 
         if ( $ok ) {
             \XenInventory\Core\AuditLog::record( 'return', 'log', $log_id, 'Log #' . $log_id, [
-                'qty_returned' => $qty_returned ?: 'all',
-                'notes'        => $notes,
+                'qty_returned'   => $qty_returned ?: 'all',
+                'return_notes'   => $return_notes,
+                'item_condition' => $item_condition,
             ] );
             wp_send_json_success( [ 'message' => __( 'Item returned successfully.', 'xen-inventory' ) ] );
         } else {
@@ -249,6 +263,17 @@ class AjaxHandlers {
             // Explicitly clearing the return date — re-open the record.
             $data['date_returned'] = null;
             $data['action']        = 'borrowed';
+        }
+
+        if ( isset( $_POST['return_notes'] ) ) {
+            $data['return_notes'] = sanitize_textarea_field( wp_unslash( $_POST['return_notes'] ) );
+        }
+
+        if ( isset( $_POST['item_condition'] ) ) {
+            $cond = sanitize_key( wp_unslash( $_POST['item_condition'] ) );
+            if ( '' === $cond || in_array( $cond, [ 'good', 'slight_damage', 'total_damage' ], true ) ) {
+                $data['item_condition'] = '' === $cond ? null : $cond;
+            }
         }
 
         if ( empty( $data ) ) {

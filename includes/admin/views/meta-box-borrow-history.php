@@ -48,6 +48,8 @@ if ( ! defined( 'ABSPATH' ) ) {
                     data-date-due="<?php echo esc_attr( $log->date_due ?? '' ); ?>"
                     data-date-returned="<?php echo esc_attr( $log->date_returned ?? '' ); ?>"
                     data-notes="<?php echo esc_attr( $log->notes ?? '' ); ?>"
+                    data-return-notes="<?php echo esc_attr( $log->return_notes ?? '' ); ?>"
+                    data-item-condition="<?php echo esc_attr( $log->item_condition ?? '' ); ?>"
                 >
                     <td><?php echo (int) $log->id; ?></td>
                     <td>

@@ -187,7 +187,24 @@ if ( '' !== $view_entity ) {
                         $status_class = 'open';
                     }
                 ?>
-                    <tr>
+                    <tr class="xen-history-row"
+                        style="cursor:pointer;"
+                        title="<?php esc_attr_e( 'Double-click to view full details', 'xen-inventory' ); ?>"
+                        data-log-id="<?php echo (int) $log->id; ?>"
+                        data-item-title="<?php echo esc_attr( $log->item_title ?? '' ); ?>"
+                        data-borrower-name="<?php echo esc_attr( $log->borrower_name ?? '' ); ?>"
+                        data-borrower-full-name="<?php echo esc_attr( $log->borrower_full_name ?? '' ); ?>"
+                        data-borrower-contact="<?php echo esc_attr( $log->borrower_contact ?? '' ); ?>"
+                        data-borrow-tags="<?php echo esc_attr( $log->borrow_tags ?? '' ); ?>"
+                        data-action="<?php echo esc_attr( $log->action ?? '' ); ?>"
+                        data-qty="<?php echo (int) $log->quantity; ?>"
+                        data-date-borrowed="<?php echo esc_attr( $log->date_borrowed ?? '' ); ?>"
+                        data-date-due="<?php echo esc_attr( $log->date_due ?? '' ); ?>"
+                        data-date-returned="<?php echo esc_attr( $log->date_returned ?? '' ); ?>"
+                        data-notes="<?php echo esc_attr( $log->notes ?? '' ); ?>"
+                        data-return-notes="<?php echo esc_attr( $log->return_notes ?? '' ); ?>"
+                        data-item-condition="<?php echo esc_attr( $log->item_condition ?? '' ); ?>"
+                    >
                         <td>
                             <?php if ( $log->item_id ) : ?>
                                 <a href="<?php echo esc_url( get_edit_post_link( (int) $log->item_id ) ); ?>">
@@ -240,6 +257,7 @@ if ( '' !== $view_entity ) {
                                 class="button button-small button-primary xen-return-log"
                                 data-log-id="<?php echo (int) $log->id; ?>"
                                 data-qty="<?php echo (int) $log->quantity; ?>"
+                                data-item-title="<?php echo esc_attr( $log->item_title ?? '' ); ?>"
                                 aria-label="<?php esc_attr_e( 'Mark as returned', 'xen-inventory' ); ?>"
                                 style="margin-top:2px;"
                             ><?php esc_html_e( 'Return', 'xen-inventory' ); ?></button>

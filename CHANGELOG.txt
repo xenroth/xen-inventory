@@ -5,6 +5,41 @@ Format follows Keep a Changelog (https://keepachangelog.com/en/1.1.0/).
 Versions follow Semantic Versioning (https://semver.org/).
 
 ------------------------------------------------------------------------------
+= 1.6.1 — 2026-06-02 =
+------------------------------------------------------------------------------
+
+== Added ==
+* Return Condition field — each return must now include a mandatory item
+  condition: "In condition / Usable", "Slightly damaged / torn", or
+  "Totally damaged / unusable" (DB slug: good | slight_damage | total_damage).
+* Return Remarks now mandatory — returns cannot be submitted without a note
+  describing the state of the item at the time of return.
+* New "Return Item" modal on all frontend pages (inventory display + item
+  detail): collects condition and return remarks before confirming return.
+  Replaces the old inline text field and browser confirm/prompt dialogs.
+* New admin return modal injected by admin.js on demand: collects condition +
+  return remarks for borrow-log and borrowers admin pages.
+* Borrow History tables (My Borrow History on inventory display, item detail
+  borrow history) now support client-side text filtering and pagination
+  (10 rows per page with live row count display).
+* All borrow history rows in admin (borrow-log, borrowers, meta-box) and
+  frontend now expose `data-return-notes` and `data-item-condition` attributes,
+  surfacing new fields in the double-click detail modal.
+* Double-click on `.xen-item-log-row` (item detail page history) now opens the
+  log-edit modal (or falls back to read-only detail modal for non-admin users).
+
+== Changed ==
+* `close_log()` and `partial_return()` signatures updated: accept
+  `$return_notes` (string) and `$item_condition` (string) instead of `$notes`.
+  Borrow-time notes are no longer overwritten on return.
+* `get_public_logs_for_item()` SELECT now includes `borrower_contact`,
+  `return_notes`, and `item_condition` columns.
+* Log-edit modal (admin + frontend) now shows Condition and Return Notes as
+  read-only info rows, and exposes them as editable fields via `xen_update_borrow`.
+* DB schema: `return_notes TEXT` and `item_condition VARCHAR(50) DEFAULT NULL`
+  columns added to `wp_xen_inventory_logs` via dbDelta on version upgrade.
+
+------------------------------------------------------------------------------
 = 1.6.0 — 2026-05-29 =
 ------------------------------------------------------------------------------
 

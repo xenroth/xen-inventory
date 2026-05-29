@@ -70,71 +70,159 @@
     } );
 
     // -----------------------------------------------------------------------
-    // Mark a borrow log entry as returned via AJAX.
+    // Mark a borrow log entry as returned via AJAX — admin return modal.
     // -----------------------------------------------------------------------
 
-    $( document ).on( 'click', '.xen-return-log', function () {
-        const $btn    = $( this );
-        const logId   = $btn.data( 'log-id' );
-        const totalQty = parseInt( $btn.data( 'qty' ) || 1, 10 );
-        const orig    = $btn.text();
+    var conditionLabels = {
+        'good':         'In condition / Usable',
+        'slight_damage':'Slightly damaged / torn',
+        'total_damage': 'Totally damaged / unusable'
+    };
+    function conditionLabel( val ) {
+        return val ? ( conditionLabels[ val ] || val ) : '';
+    }
 
-        // When qty > 1, prompt for how many to return.
-        var qtyReturned = totalQty;
-        if ( totalQty > 1 ) {
-            var answer = window.prompt(
-                'How many items are being returned? (1 – ' + totalQty + ')',
-                totalQty
-            );
-            if ( answer === null ) {
-                return; // Cancelled.
-            }
-            qtyReturned = parseInt( answer, 10 );
-            if ( isNaN( qtyReturned ) || qtyReturned < 1 || qtyReturned > totalQty ) {
-                alert( 'Please enter a number between 1 and ' + totalQty + '.' );
-                return;
-            }
-        } else {
-            if ( ! window.confirm( xenInventoryAdmin.i18n.confirmReturn ) ) {
-                return;
-            }
-        }
+    function ensureReturnModal() {
+        if ( $( '#xen-admin-return-modal' ).length ) { return; }
 
-        $btn.prop( 'disabled', true ).text( xenInventoryAdmin.i18n.saving );
+        $( 'body' ).append(
+            '<div id="xen-admin-return-modal" style="display:none;position:fixed;inset:0;z-index:100070;align-items:center;justify-content:center;" role="dialog" aria-modal="true">' +
+            '  <div id="xen-admin-return-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,.6);"></div>' +
+            '  <div style="position:relative;background:#fff;border-radius:6px;padding:1.5rem 1.75rem;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.3);">' +
+            '    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;border-bottom:2px solid #f0f0f0;padding-bottom:.75rem;">' +
+            '      <h3 style="margin:0;font-size:1rem;font-weight:700;">Return Item</h3>' +
+            '      <button type="button" id="xen-admin-return-close" class="button" style="min-width:auto;padding:.1rem .5rem;font-size:1.1rem;line-height:1.6;" aria-label="Close">&times;</button>' +
+            '    </div>' +
+            '    <p style="font-size:.9rem;margin:.25rem 0 1rem;">Returning: <strong id="xen-admin-return-item-name"></strong></p>' +
+            '    <div id="xen-admin-return-qty-wrap" style="display:none;margin-bottom:1rem;">' +
+            '      <label for="xen-admin-return-qty" style="display:block;font-weight:600;font-size:.875rem;margin-bottom:.3rem;">Qty Returning <span id="xen-admin-return-qty-max" style="font-weight:400;color:#666;"></span></label>' +
+            '      <input type="number" id="xen-admin-return-qty" min="1" style="width:6rem;padding:.3rem .5rem;border:1px solid #ccc;border-radius:4px;" />' +
+            '    </div>' +
+            '    <div style="margin-bottom:1rem;">' +
+            '      <label for="xen-admin-return-condition" style="display:block;font-weight:600;font-size:.875rem;margin-bottom:.3rem;">Item Condition on Return <span style="color:#c00;" aria-hidden="true">*</span></label>' +
+            '      <select id="xen-admin-return-condition" required style="width:100%;padding:.4rem .5rem;border:1px solid #ccc;border-radius:4px;">' +
+            '        <option value="">— Select condition —</option>' +
+            '        <option value="good">✅ In condition / Usable</option>' +
+            '        <option value="slight_damage">⚠️ Slightly damaged / torn</option>' +
+            '        <option value="total_damage">❌ Totally damaged / unusable</option>' +
+            '      </select>' +
+            '    </div>' +
+            '    <div style="margin-bottom:1.25rem;">' +
+            '      <label for="xen-admin-return-notes" style="display:block;font-weight:600;font-size:.875rem;margin-bottom:.3rem;">Return Remarks <span style="color:#c00;" aria-hidden="true">*</span></label>' +
+            '      <textarea id="xen-admin-return-notes" rows="3" required placeholder="e.g. Returned in good condition. Checked by staff." style="width:100%;padding:.4rem .5rem;border:1px solid #ccc;border-radius:4px;resize:vertical;box-sizing:border-box;"></textarea>' +
+            '    </div>' +
+            '    <div style="display:flex;gap:.6rem;flex-wrap:wrap;">' +
+            '      <button type="button" id="xen-admin-return-submit" class="button button-primary">Confirm Return</button>' +
+            '      <button type="button" id="xen-admin-return-cancel" class="button">Cancel</button>' +
+            '    </div>' +
+            '    <p id="xen-admin-return-status" style="margin-top:.75rem;font-size:.875rem;min-height:1.2em;" aria-live="polite"></p>' +
+            '  </div>' +
+            '</div>'
+        );
 
-        $.post( xenInventoryAdmin.ajaxUrl, {
-            action:       'xen_return_item',
-            nonce:        xenInventoryAdmin.returnNonce,
-            log_id:       logId,
-            qty_returned: qtyReturned,
-            notes:        '',
-        } )
-        .done( function ( response ) {
-            if ( response.success ) {
-                const $row       = $btn.closest( 'tr' );
-                const isPartial  = qtyReturned < totalQty;
-                if ( isPartial ) {
-                    // Update qty cell and edit-button data.
-                    const remaining = totalQty - qtyReturned;
-                    $row.find( '.xen-log-qty-cell' ).text( remaining );
-                    $btn.data( 'qty', remaining ).prop( 'disabled', false ).text( orig );
-                    $row.find( '.xen-edit-log' ).data( 'date-due', $row.find( '.xen-edit-log' ).data( 'date-due' ) );
-                } else {
-                    // Full return — update the Returned cell and remove button.
-                    $row.find( '.xen-log-returned-cell' ).html(
-                        '<span class="xen-badge xen-badge--returned">' + xenInventoryAdmin.i18n.returned + '</span>'
-                    );
-                    $btn.remove();
-                }
-            } else {
-                alert( response.data ? response.data.message : 'Error.' );
-                $btn.prop( 'disabled', false ).text( orig );
-            }
-        } )
-        .fail( function () {
-            alert( 'Error.' );
-            $btn.prop( 'disabled', false ).text( orig );
+        $( document ).on( 'click', '#xen-admin-return-close, #xen-admin-return-cancel, #xen-admin-return-backdrop', function () {
+            $( '#xen-admin-return-modal' ).css( 'display', 'none' );
         } );
+
+        $( document ).on( 'keydown.xenAdminReturnModal', function ( e ) {
+            if ( 'Escape' === e.key ) { $( '#xen-admin-return-modal' ).css( 'display', 'none' ); }
+        } );
+
+        $( document ).on( 'click', '#xen-admin-return-submit', function () {
+            var $modal     = $( '#xen-admin-return-modal' );
+            var logId      = $modal.data( 'log-id' );
+            var totalQty   = $modal.data( 'total-qty' );
+            var $origBtn   = $modal.data( 'orig-btn' );
+            var origText   = $modal.data( 'orig-text' );
+            var condition  = $( '#xen-admin-return-condition' ).val();
+            var notes      = $.trim( $( '#xen-admin-return-notes' ).val() );
+            var $status    = $( '#xen-admin-return-status' );
+            var $submit    = $( this );
+
+            var qtyReturned = totalQty;
+            if ( $modal.find( '#xen-admin-return-qty-wrap' ).is( ':visible' ) ) {
+                qtyReturned = parseInt( $( '#xen-admin-return-qty' ).val(), 10 );
+                if ( isNaN( qtyReturned ) || qtyReturned < 1 || qtyReturned > totalQty ) {
+                    $status.css( 'color', '#c00' ).text( 'Please enter a valid quantity (1–' + totalQty + ').' );
+                    return;
+                }
+            }
+
+            if ( ! condition ) {
+                $status.css( 'color', '#c00' ).text( 'Please select the item condition.' );
+                return;
+            }
+            if ( ! notes ) {
+                $status.css( 'color', '#c00' ).text( 'Return remarks are required.' );
+                return;
+            }
+
+            $submit.prop( 'disabled', true ).text( xenInventoryAdmin.i18n.saving );
+            $status.text( '' );
+
+            $.post( xenInventoryAdmin.ajaxUrl, {
+                action:         'xen_return_item',
+                nonce:          xenInventoryAdmin.returnNonce,
+                log_id:         logId,
+                qty_returned:   qtyReturned,
+                return_notes:   notes,
+                item_condition: condition,
+            } )
+            .done( function ( response ) {
+                if ( response.success ) {
+                    $modal.css( 'display', 'none' );
+                    var isPartial = qtyReturned < totalQty;
+                    var $row = $origBtn.closest( 'tr' );
+                    if ( isPartial ) {
+                        var remaining = totalQty - qtyReturned;
+                        $row.find( '.xen-log-qty-cell' ).text( remaining );
+                        $origBtn.data( 'qty', remaining ).prop( 'disabled', false ).text( origText );
+                    } else {
+                        $row.find( '.xen-log-returned-cell' ).html(
+                            '<span class="xen-badge xen-badge--returned">' + xenInventoryAdmin.i18n.returned + '</span>'
+                        );
+                        $origBtn.remove();
+                    }
+                } else {
+                    $status.css( 'color', '#c00' ).text( response.data ? response.data.message : 'Error.' );
+                    $submit.prop( 'disabled', false ).text( 'Confirm Return' );
+                }
+            } )
+            .fail( function () {
+                $status.css( 'color', '#c00' ).text( 'Network error.' );
+                $submit.prop( 'disabled', false ).text( 'Confirm Return' );
+            } );
+        } );
+    }
+
+    function openAdminReturnModal( logId, totalQty, itemTitle, $origBtn ) {
+        ensureReturnModal();
+        var $modal = $( '#xen-admin-return-modal' );
+        $modal.data( 'log-id',    logId )
+              .data( 'total-qty', totalQty )
+              .data( 'orig-btn',  $origBtn )
+              .data( 'orig-text', $origBtn.text() );
+        $( '#xen-admin-return-item-name' ).text( itemTitle || 'Log #' + logId );
+        $( '#xen-admin-return-condition' ).val( '' );
+        $( '#xen-admin-return-notes' ).val( '' );
+        $( '#xen-admin-return-status' ).text( '' );
+        $( '#xen-admin-return-submit' ).prop( 'disabled', false ).text( 'Confirm Return' );
+        if ( totalQty > 1 ) {
+            $( '#xen-admin-return-qty' ).val( totalQty ).attr( 'max', totalQty );
+            $( '#xen-admin-return-qty-max' ).text( '(max ' + totalQty + ')' );
+            $( '#xen-admin-return-qty-wrap' ).show();
+        } else {
+            $( '#xen-admin-return-qty-wrap' ).hide();
+        }
+        $modal.css( 'display', 'flex' );
+    }
+
+    $( document ).on( 'click', '.xen-return-log', function () {
+        var $btn      = $( this );
+        var logId     = $btn.data( 'log-id' );
+        var totalQty  = parseInt( $btn.data( 'qty' ) || 1, 10 );
+        var itemTitle = $btn.data( 'item-title' ) || $btn.closest( 'tr' ).data( 'item-title' ) || '';
+        openAdminReturnModal( logId, totalQty, itemTitle, $btn );
     } );
 
     // -----------------------------------------------------------------------
@@ -386,6 +474,8 @@
             [ 'Due',            d.dateDue          || '—' ],
             [ 'Returned',       d.dateReturned     || '—' ],
             [ 'Notes',          d.notes            || '—' ],
+            [ 'Condition',      conditionLabel( d.itemCondition ) || '—' ],
+            [ 'Return Notes',   d.returnNotes      || '—' ],
         ] );
     } );
 

@@ -169,6 +169,20 @@ get_header();
         <?php if ( empty( $item_logs ) ) : ?>
             <p class="xen-notice"><?php esc_html_e( 'This item has not been borrowed yet.', 'xen-inventory' ); ?></p>
         <?php else : ?>
+        <p class="xen-notice xen-notice--hint"><?php esc_html_e( 'Double-click a row to view its details.', 'xen-inventory' ); ?></p>
+        <!-- Filter toolbar -->
+        <div class="xen-borrows-toolbar" style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap;">
+            <input
+                type="search"
+                id="xen-item-history-filter"
+                class="xen-input"
+                placeholder="<?php esc_attr_e( 'Filter by borrower or tags…', 'xen-inventory' ); ?>"
+                aria-label="<?php esc_attr_e( 'Filter borrow history', 'xen-inventory' ); ?>"
+                autocomplete="off"
+                style="flex:1 1 200px;max-width:280px;"
+            />
+            <span id="xen-item-history-count" style="font-size:.85rem;color:#666;"></span>
+        </div>
         <div class="xen-history-table-wrap">
             <table class="xen-history-table">
                 <thead>
@@ -198,13 +212,21 @@ get_header();
                         $tags        = array_filter( array_map( 'trim', explode( ',', (string) $log->borrow_tags ) ) );
                     ?>
                     <tr class="xen-item-log-row"
+                        style="cursor:pointer;"
+                        title="<?php esc_attr_e( 'Double-click to view or edit this record', 'xen-inventory' ); ?>"
                         data-log-id="<?php echo (int) $log->id; ?>"
+                        data-item-title="<?php echo esc_attr( get_the_title( $item_id ) ); ?>"
                         data-qty="<?php echo (int) $log->quantity; ?>"
                         data-borrower="<?php echo esc_attr( $borrower ); ?>"
+                        data-borrower-full-name="<?php echo esc_attr( $log->borrower_full_name ?? '' ); ?>"
+                        data-borrower-contact="<?php echo esc_attr( $log->borrower_contact ?? '' ); ?>"
+                        data-borrow-tags="<?php echo esc_attr( $log->borrow_tags ?? '' ); ?>"
                         data-date-borrowed="<?php echo esc_attr( $log->date_borrowed ?? '' ); ?>"
                         data-date-due="<?php echo esc_attr( $log->date_due ?? '' ); ?>"
                         data-date-returned="<?php echo esc_attr( $log->date_returned ?? '' ); ?>"
                         data-notes="<?php echo esc_attr( $log->notes ?? '' ); ?>"
+                        data-return-notes="<?php echo esc_attr( $log->return_notes ?? '' ); ?>"
+                        data-item-condition="<?php echo esc_attr( $log->item_condition ?? '' ); ?>"
                         data-status="<?php echo esc_attr( $status_cls ); ?>"
                     >
                         <td><?php echo esc_html( $borrower ); ?></td>
@@ -240,7 +262,9 @@ get_header();
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        </div>
+        </div><!-- .xen-history-table-wrap -->
+        <!-- Pagination (populated by JS) -->
+        <div class="xen-borrows-pagination" id="xen-item-history-pagination" aria-label="<?php esc_attr_e( 'Item history pages', 'xen-inventory' ); ?>" style="margin-top:.6rem;display:flex;gap:.3rem;flex-wrap:wrap;"></div>
         <?php endif; ?>
     </div><!-- .xen-item-detail__history -->
 
@@ -263,7 +287,9 @@ get_header();
                 <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Contact',       'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-contact">—</td></tr>
                 <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Tags',          'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-tags">—</td></tr>
                 <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Quantity',      'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-qty">—</td></tr>
-                <tr><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Borrowed',      'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-borrowed">—</td></tr>
+                <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Borrowed',      'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-borrowed">—</td></tr>
+                <tr style="border-bottom:1px solid #f0f0f0;"><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Condition',     'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-condition-display">—</td></tr>
+                <tr><th style="text-align:left;padding:.35rem .5rem .35rem 0;font-weight:600;color:#555;"><?php esc_html_e( 'Return Notes',  'xen-inventory' ); ?></th><td style="padding:.35rem 0;" id="xen-log-edit-return-notes-display">—</td></tr>
             </table>
         </div>
 
@@ -283,6 +309,19 @@ get_header();
             <div class="xen-form__group">
                 <label for="xen-log-edit-notes"><?php esc_html_e( 'Notes', 'xen-inventory' ); ?></label>
                 <textarea id="xen-log-edit-notes" name="notes" rows="3"></textarea>
+            </div>
+            <div class="xen-form__group">
+                <label for="xen-log-edit-condition"><?php esc_html_e( 'Item Condition on Return', 'xen-inventory' ); ?></label>
+                <select id="xen-log-edit-condition" name="item_condition">
+                    <option value=""><?php esc_html_e( '— Not set —', 'xen-inventory' ); ?></option>
+                    <option value="good"><?php esc_html_e( 'In condition / Usable', 'xen-inventory' ); ?></option>
+                    <option value="slight_damage"><?php esc_html_e( 'Slightly damaged / torn', 'xen-inventory' ); ?></option>
+                    <option value="total_damage"><?php esc_html_e( 'Totally damaged / unusable', 'xen-inventory' ); ?></option>
+                </select>
+            </div>
+            <div class="xen-form__group">
+                <label for="xen-log-edit-return-notes"><?php esc_html_e( 'Return Notes', 'xen-inventory' ); ?></label>
+                <textarea id="xen-log-edit-return-notes" name="return_notes" rows="2"></textarea>
             </div>
             <div class="xen-form__actions">
                 <button type="submit" class="xen-btn xen-btn--primary" id="xen-log-edit-save"><?php esc_html_e( 'Save Changes', 'xen-inventory' ); ?></button>
@@ -366,6 +405,48 @@ get_header();
 
             <div class="xen-form__message" aria-live="polite"></div>
         </form>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ( is_user_logged_in() && current_user_can( 'xen_return_items' ) ) : ?>
+<!-- Return Confirmation Modal -->
+<div id="xen-return-confirm-modal" style="display:none;position:fixed;inset:0;z-index:100070;align-items:center;justify-content:center;" role="dialog" aria-modal="true" aria-labelledby="xen-return-confirm-title">
+    <div id="xen-return-confirm-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,.6);"></div>
+    <div style="position:relative;background:#fff;border-radius:6px;padding:1.5rem 1.75rem;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.3);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;border-bottom:2px solid #f0f0f0;padding-bottom:.75rem;">
+            <h3 id="xen-return-confirm-title" style="margin:0;font-size:1rem;font-weight:700;"><?php esc_html_e( 'Return Item', 'xen-inventory' ); ?></h3>
+            <button type="button" id="xen-return-confirm-close" class="xen-btn xen-btn--ghost" style="padding:.2rem .65rem;font-size:1.15rem;line-height:1.3;" aria-label="<?php esc_attr_e( 'Close', 'xen-inventory' ); ?>">&times;</button>
+        </div>
+        <p style="font-size:.9rem;margin:.25rem 0 1rem;"><?php esc_html_e( 'Returning:', 'xen-inventory' ); ?> <strong id="xen-return-confirm-item-name"></strong></p>
+        <div id="xen-return-confirm-qty-wrap" style="display:none;margin-bottom:1rem;">
+            <label for="xen-return-confirm-qty" style="display:block;font-weight:600;font-size:.875rem;margin-bottom:.3rem;">
+                <?php esc_html_e( 'Qty Returning', 'xen-inventory' ); ?> <span id="xen-return-confirm-qty-max-label" style="font-weight:400;color:#666;"></span>
+            </label>
+            <input type="number" id="xen-return-confirm-qty" min="1" style="width:6rem;padding:.3rem .5rem;border:1px solid #ccc;border-radius:4px;" />
+        </div>
+        <div style="margin-bottom:1rem;">
+            <label for="xen-return-confirm-condition" style="display:block;font-weight:600;font-size:.875rem;margin-bottom:.3rem;">
+                <?php esc_html_e( 'Item Condition on Return', 'xen-inventory' ); ?> <span class="xen-required-star" aria-hidden="true">*</span>
+            </label>
+            <select id="xen-return-confirm-condition" required style="width:100%;padding:.4rem .5rem;border:1px solid #ccc;border-radius:4px;">
+                <option value=""><?php esc_html_e( '— Select condition —', 'xen-inventory' ); ?></option>
+                <option value="good"><?php esc_html_e( '✅ In condition / Usable', 'xen-inventory' ); ?></option>
+                <option value="slight_damage"><?php esc_html_e( '⚠️ Slightly damaged / torn', 'xen-inventory' ); ?></option>
+                <option value="total_damage"><?php esc_html_e( '❌ Totally damaged / unusable', 'xen-inventory' ); ?></option>
+            </select>
+        </div>
+        <div style="margin-bottom:1.25rem;">
+            <label for="xen-return-confirm-notes" style="display:block;font-weight:600;font-size:.875rem;margin-bottom:.3rem;">
+                <?php esc_html_e( 'Return Remarks', 'xen-inventory' ); ?> <span class="xen-required-star" aria-hidden="true">*</span>
+            </label>
+            <textarea id="xen-return-confirm-notes" rows="3" required placeholder="<?php esc_attr_e( 'e.g. Returned by Juan Dela Cruz. Item was clean and in working order.', 'xen-inventory' ); ?>" style="width:100%;padding:.4rem .5rem;border:1px solid #ccc;border-radius:4px;resize:vertical;box-sizing:border-box;"></textarea>
+        </div>
+        <div class="xen-form__actions">
+            <button type="button" class="xen-btn xen-btn--primary" id="xen-return-confirm-submit"><?php esc_html_e( 'Confirm Return', 'xen-inventory' ); ?></button>
+            <button type="button" class="xen-btn xen-btn--ghost" id="xen-return-confirm-cancel"><?php esc_html_e( 'Cancel', 'xen-inventory' ); ?></button>
+        </div>
+        <p id="xen-return-confirm-status" style="margin-top:.75rem;font-size:.875rem;min-height:1.2em;" aria-live="polite"></p>
     </div>
 </div>
 <?php endif; ?>
